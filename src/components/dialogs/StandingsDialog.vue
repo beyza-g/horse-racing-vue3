@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import ColorTick from '@/components/ui/ColorTick.vue';
+import IconChevron from '@/components/ui/icons/IconChevron.vue';
 import IconClose from '@/components/ui/icons/IconClose.vue';
 import MovementBadge from '@/components/ui/MovementBadge.vue';
 import ModalDialog from '@/components/ui/ModalDialog.vue';
@@ -34,15 +35,29 @@ const subtitle = computed(() => {
   >
     <div class="standings__head">
       <div class="standings__intro">
+        <!-- Stacked on the summary: a back control top-left (it returns there). -->
+        <button
+          v-if="race.standingsReturnToSummary"
+          type="button"
+          class="standings__back"
+          aria-label="Back to summary"
+          title="Back to summary (Esc)"
+          @click="race.closeStandings()"
+        >
+          <IconChevron direction="left" />
+          <span>Summary</span>
+        </button>
         <p class="standings__eyebrow mono">PROGRAM STANDINGS</p>
         <h2 id="standings-title" class="standings__title">Standings</h2>
         <p id="standings-subtitle" class="standings__subtitle">{{ subtitle }}</p>
       </div>
+
       <button
+        v-if="!race.standingsReturnToSummary"
         type="button"
         class="standings__close"
-        :aria-label="race.standingsReturnToSummary ? 'Back to summary' : 'Close standings'"
-        :title="`${closeLabel} (Esc)`"
+        aria-label="Close standings"
+        title="Close (Esc)"
         @click="race.closeStandings()"
       >
         <IconClose />
@@ -181,8 +196,27 @@ const subtitle = computed(() => {
   justify-content: center;
 }
 
-.standings__close:hover {
+.standings__close:hover,
+.standings__back:hover {
   background-color: var(--hover-ring);
+}
+
+.standings__back {
+  align-self: flex-start;
+  margin-bottom: 8px;
+  height: 32px;
+  flex: none;
+  padding: 0 12px 0 8px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background-color: var(--chip-strong);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .standings__frame {

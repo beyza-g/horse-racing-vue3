@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ProgramCompleteDialog from '@/components/dialogs/ProgramCompleteDialog.vue';
+import FollowBadge from '@/components/follow/FollowBadge.vue';
 import AppHeader from '@/components/header/AppHeader.vue';
 import DashboardLayout from '@/components/layout/DashboardLayout.vue';
 import ProgramPanel from '@/components/program/ProgramPanel.vue';
@@ -55,7 +56,9 @@ const openDialog = computed<OpenDialog | null>(() =>
   race.confirmRegenerateOpen
     ? 'confirm-regenerate'
     : race.standingsOpen
-      ? 'standings'
+      ? race.phase === 'complete'
+        ? 'final-standings'
+        : 'standings'
       : race.completionOpen
         ? 'completion'
         : null,
@@ -80,6 +83,7 @@ useOutsideClick(
     <template #program><ProgramPanel /></template>
     <template #stable><StablePanel /></template>
   </DashboardLayout>
+  <FollowBadge />
   <ProgramCompleteDialog />
   <RegenerateConfirmDialog />
   <StandingsDialog />

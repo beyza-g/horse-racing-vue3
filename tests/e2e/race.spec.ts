@@ -258,6 +258,8 @@ test.describe('program completion', () => {
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Final standings' })).toBeFocused();
     await dialog.getByRole('button', { name: 'Final standings' }).click();
+    await expect(finalStandings.locator('.standings__back')).toBeVisible();
+    await expect(finalStandings.locator('.standings__close')).toHaveCount(0);
     await finalStandings
       .locator('.standings__actions')
       .getByRole('button', { name: 'Back to summary' })
@@ -275,11 +277,15 @@ test.describe('program completion', () => {
     await page.getByRole('button', { name: 'Full table' }).click();
     const standings = page.getByRole('dialog', { name: 'Standings' });
     await expect(standings).toContainText('Final standings after all six rounds');
+    // After View track, the header control closes (back to the track), not "Summary".
+    await expect(standings.getByRole('button', { name: 'Close standings' })).toBeVisible();
     const points = await standings.locator('tbody td.is-points').allInnerTexts();
     expect(points.map(Number).reduce((a, b) => a + b, 0)).toBe(234);
-    await page.keyboard.press('Escape');
 
-    await generateButton(page).click();
+    // Enter starts a new program from the final standings, as from the summary.
+    await standings.locator('.standings__note').click();
+    await page.keyboard.press('Enter');
+    await expect(standings).toBeHidden();
     await expect(header(page).getByRole('status')).toContainText('At the gates');
     await expect(page.getByText('0 / 6')).toBeVisible();
   });

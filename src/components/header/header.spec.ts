@@ -1,6 +1,9 @@
 import { mount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 import { describe, expect, it } from 'vitest';
-import FollowChip from './FollowChip.vue';
+import { usePreferencesStore } from '@/stores/preferences';
+import { useRaceStore } from '@/stores/race';
+import AppHeader from './AppHeader.vue';
 import PlaybackButton from './PlaybackButton.vue';
 import RoundProgress from './RoundProgress.vue';
 import SpeedSelector from './SpeedSelector.vue';
@@ -78,11 +81,14 @@ describe('RoundProgress', () => {
   });
 });
 
-describe('FollowChip', () => {
-  it('names the horse and emits clear from a labelled button', async () => {
-    const wrapper = mount(FollowChip, { props: { name: 'Iron Halo', color: 'red' } });
-    expect(wrapper.text()).toContain('Iron Halo');
-    await wrapper.get('button[aria-label="Stop following"]').trigger('click');
-    expect(wrapper.emitted('clear')).toHaveLength(1);
+describe('AppHeader', () => {
+  it('never renders the follow badge, so following cannot move the header', async () => {
+    setActivePinia(createPinia());
+    useRaceStore().initialize(42);
+    const wrapper = mount(AppHeader);
+    usePreferencesStore().toggleFollow(3);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('.follow-chip').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('Following');
   });
 });

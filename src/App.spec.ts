@@ -273,7 +273,40 @@ describe('App', () => {
         Number(td.textContent),
       );
       expect(points.reduce((a, b) => a + b, 0)).toBe(234);
-      expect(dialog.querySelector('[aria-label="Back to summary"]')).not.toBeNull();
+      // Stacked on the summary, the header control is a back button, not a close.
+      expect(dialog.querySelector('.standings__back')?.getAttribute('aria-label')).toBe(
+        'Back to summary',
+      );
+      expect(dialog.querySelector('.standings__close')).toBeNull();
+    });
+
+    it('Enter in the final standings starts a new program', async () => {
+      const { race } = mountApp();
+      race.generateProgram();
+      await playToCompletion(race);
+      dialogButton('Final standings').click();
+      await settle();
+      (document.activeElement as HTMLElement | null)?.blur();
+      await press('Enter');
+      expect(race.phase).toBe('ready');
+      expect(race.standingsOpen).toBe(false);
+      expect(race.completionOpen).toBe(false);
+    });
+
+    it('mid-program the standings show a close control and Enter does nothing', async () => {
+      const { wrapper: w, race } = mountApp();
+      race.generateProgram();
+      await nextTick();
+      await w.get('#stable-tab-standings').trigger('click');
+      await w.get('.stable-panel__table').trigger('click');
+      await settle();
+      const dialog = document.querySelector('[role="dialog"]')!;
+      expect(dialog.querySelector('.standings__close')).not.toBeNull();
+      expect(dialog.querySelector('.standings__back')).toBeNull();
+      (document.activeElement as HTMLElement | null)?.blur();
+      await press('Enter');
+      expect(race.standingsOpen).toBe(true);
+      expect(race.phase).toBe('ready');
     });
 
     it('closing the final standings returns to the summary, focused where it left off', async () => {

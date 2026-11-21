@@ -69,6 +69,82 @@ for (const viewport of [VIEWPORTS[1]!, VIEWPORTS[4]!]) {
   });
 }
 
+for (const width of [320, 375, 820, 1180, 1280, 1440]) {
+  test(`following a horse moves nothing and covers neither header nor track at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await openApp(page);
+    await header(page).getByRole('button', { name: 'Generate Program' }).click();
+    const content = [
+      'header',
+      '.app-header__title',
+      '.round-progress',
+      '.status-indicator',
+      '.app-header__controls',
+      '.race-track',
+      '.results-panel',
+    ];
+    const boxes = () =>
+      page.evaluate(
+        (selectors) =>
+          selectors.map((selector) => {
+            const r = document.querySelector(selector)!.getBoundingClientRect();
+            return [r.x + window.scrollX, r.y + window.scrollY, r.width, r.height]
+              .map(Math.round)
+              .join(',');
+          }),
+        content,
+      );
+    const chip = page.locator('.follow-badge .follow-chip');
+    await expect(chip).toHaveCount(0);
+    const idle = await boxes();
+    await page.locator('.stable-table__row').nth(10).click();
+    await expect(chip).toBeVisible();
+    // Nothing moves, horizontally or vertically.
+    expect(await boxes()).toEqual(idle);
+    // Scrolled to the end, the badge never covers the header, the track or
+    // any panel content: below 1180 px it rests in the page's bottom
+    // clearance, on desktop in the empty lower part of the Program panel.
+    const geometry = await page.evaluate(async () => {
+      window.scrollTo(0, document.documentElement.scrollHeight);
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const badge = document.querySelector('.follow-chip')!.getBoundingClientRect();
+      const overlaps = (b: DOMRect) =>
+        !(
+          badge.right <= b.left ||
+          b.right <= badge.left ||
+          badge.bottom <= b.top ||
+          b.bottom <= badge.top
+        );
+      const desktop = window.innerWidth >= 1180;
+      const blockers = desktop
+        ? ['header', '.race-track', '.dashboard__area--program .round-card']
+        : ['header', '.race-track', '.panel-card'];
+      const hits = blockers.filter((selector) =>
+        [...document.querySelectorAll(selector)].some((el) => overlaps(el.getBoundingClientRect())),
+      );
+      const program = document.querySelector('.dashboard__area--program')!.getBoundingClientRect();
+      return {
+        desktop,
+        hits,
+        insideViewport:
+          badge.left >= 0 && badge.right <= window.innerWidth && badge.bottom <= window.innerHeight,
+        insideProgram:
+          badge.left >= program.left &&
+          badge.right <= program.right &&
+          badge.bottom <= program.bottom,
+      };
+    });
+    expect(geometry.hits).toEqual([]);
+    expect(geometry.insideViewport).toBe(true);
+    if (geometry.desktop) expect(geometry.insideProgram).toBe(true);
+    await chip.getByRole('button', { name: 'Stop following' }).click();
+    await expect(chip).toHaveCount(0);
+    expect(await boxes()).toEqual(idle);
+  });
+}
+
 test('desktop uses the three-column grid', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openApp(page);

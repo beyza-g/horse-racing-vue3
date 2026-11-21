@@ -66,6 +66,18 @@ describe('resolveShortcut', () => {
       expect(resolveShortcut(key({ key: k }), confirming)).toBeNull();
   });
 
+  it('lets Enter start a new program from the final standings (nothing left to lose)', () => {
+    const finalStandings = { dialog: 'final-standings' } as const;
+    expect(resolveShortcut(key({ key: 'Enter' }), finalStandings)).toEqual({
+      type: 'confirmDialog',
+    });
+    expect(resolveShortcut(key({ key: 'Escape' }), finalStandings)).toEqual({
+      type: 'dismissDialog',
+    });
+    expect(resolveShortcut(key({ key: 'Enter', targetTag: 'BUTTON' }), finalStandings)).toBeNull();
+    expect(resolveShortcut(space, finalStandings)).toEqual({ type: 'block' });
+  });
+
   it('closes the standings table with Escape and ignores Enter', () => {
     const standings = { dialog: 'standings' } as const;
     expect(resolveShortcut(key({ key: 'Escape' }), standings)).toEqual({ type: 'dismissDialog' });

@@ -106,6 +106,10 @@
 
   --row-h: 26px;
   --control-h: 40px;
+  /* Floating follow badge: offset from the viewport edge, and the page-bottom
+     clearance that keeps it off the last panel on scrolling layouts. */
+  --float-inset: 10px;
+  --float-clearance: calc(var(--control-h) + 2 * var(--float-inset));
   --gap: 14px;
 
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -114,4 +118,10 @@
 
   /* Breakpoints (reference only; CSS media queries cannot read variables):
      desktop >= 1180px, tablet >= 760px, mobile < 760px. */
+}
+
+@media (min-width: 760px) {
+  :root {
+    --float-inset: var(--gap);
+  }
 }

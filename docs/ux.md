@@ -63,10 +63,15 @@ rank, horse and points stay pinned; the page itself never scrolls sideways.
 **Generate new program** as the full-width primary action and two equal
 secondary actions below it, **Final standings** and **View track** (they
 stack on very narrow screens). **Final standings** opens the standings
-table in front of the summary rather than dismissing it: the table's close
-control reads **Back to summary**, Esc does the same, and focus returns to
-**Final standings**; **Generate new program** is also offered in the
-table's footer, so the new-program path is never more than one click away.
+table in front of the summary rather than dismissing it. Navigation sits at
+the top-left as a **‹ Summary** back button (not an ✕, which would suggest
+closing everything); the footer repeats **Back to summary** beside the
+primary **Generate new program**, so both paths stay in reach after
+scrolling the table. Esc goes back, Enter starts a new program (as in the
+summary; nothing is lost once the program is complete), and focus returns
+to **Final standings**. Opened from the Stable tab after **View track**, the
+table shows a plain ✕ and **Close** instead, since closing returns to the
+track it was opened from.
 Only **View track** dismisses the summary, and the staged reveal plays only
 the first time it appears.
 
@@ -101,9 +106,10 @@ gates and after completion nothing is lost, so Generate stays one click.
 
 **Follow a horse from anywhere, dismiss it the same way.** Clicking a lane on
 the track, or a row in the stable, program or results, follows that horse:
-its lane is highlighted, the other horses dim, a guide line tracks it and the
-header shows a "Following" chip. To stop, press `Esc`, use the chip's close
-button, or click anything that is not a control: panel headings, empty
+its lane is highlighted, the other horses dim, a guide line tracks it and a
+"Following" badge appears in the bottom-right corner of the screen (only
+while a horse is followed; see Zero layout shift). To stop, press `Esc`, use
+the badge's close button, or click anything that is not a control: panel headings, empty
 panel space, the page background, or the track outside the lanes. Buttons,
 links, form fields and dialogs never clear it, so no intentional interaction
 is lost (the rule is one pure function, `isDismissClick`).
@@ -178,22 +184,40 @@ Live data changes every frame, so the layout is built not to move:
   without resizing the header.
 - Pills and rows have fixed heights.
 
-An end-to-end test measures the header, canvas, results and panels before
-and after Start, Pause and Resume and requires identical boxes.
+- The "Following" badge is not part of any layout. It is fixed to the
+  viewport's bottom-right corner (`FollowBadge`, mounted beside the
+  dashboard), so following or unfollowing never moves anything, and it
+  stays out of the header and the track, so it never covers the round, the
+  runners or the distance markers. On desktop the grid fills the viewport
+  and the badge rests in the empty lower part of the Program panel,
+  aligned with its content edges. Below 1180 px the page scrolls, and the
+  page keeps a permanent bottom clearance (`--float-clearance`, one control
+  height plus two insets) so that at the end of the scroll the badge sits
+  below the last panel instead of over it; the clearance is always there,
+  so following never changes the page height. The badge is an `aria-live`
+  region, so the change is announced, and the page behind an open dialog
+  (including the badge) is `inert`.
+
+End-to-end tests measure the header, canvas, results and panels before and
+after Start, Pause and Resume, and before and after following and
+unfollowing a horse at six widths (320 to 1440 px), and require identical
+boxes; scrolled to the end, they also assert that the badge covers neither
+the header, the track nor any panel content (on desktop: no round card).
 
 ## Keyboard
 
-| Key         | Action                                           |
-| ----------- | ------------------------------------------------ |
-| `Space`     | Start, pause or resume                           |
-| `1` `2` `4` | Playback speed                                   |
-| `F`         | Focus mode                                       |
-| `T`         | Light or dark theme                              |
-| `Esc`       | Stop following, then leave focus mode            |
-| `Enter`     | In the completion dialog: generate a new program |
-| `Esc`       | In the completion dialog: view the track         |
-| `Esc`       | In the discard confirmation: keep the program    |
-| `Esc`       | In the standings table: close it                 |
+| Key         | Action                                               |
+| ----------- | ---------------------------------------------------- |
+| `Space`     | Start, pause or resume                               |
+| `1` `2` `4` | Playback speed                                       |
+| `F`         | Focus mode                                           |
+| `T`         | Light or dark theme                                  |
+| `Esc`       | Stop following, then leave focus mode                |
+| `Enter`     | In the completion dialog: generate a new program     |
+| `Esc`       | In the completion dialog: view the track             |
+| `Esc`       | In the discard confirmation: keep the program        |
+| `Esc`       | In the standings table: back to the summary or close |
+| `Enter`     | In the final standings: generate a new program       |
 
 Shortcuts are ignored while typing in a field and with modifier keys. Space
 on a focused button activates that button instead of toggling playback twice.
@@ -238,7 +262,7 @@ the condensed headings) with JetBrains Mono for numbers, both self-hosted.
 
 | Kind           | Components                                                                                                    | Rule                                  |
 | -------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| Containers     | `AppHeader`, `RaceTrack`, `ResultsPanel`, `ProgramPanel`, `StablePanel`, `ProgramCompleteDialog`              | Read stores, wire events              |
+| Containers     | `AppHeader`, `RaceTrack`, `ResultsPanel`, `ProgramPanel`, `StablePanel`, `FollowBadge`, dialogs               | Read stores, wire events              |
 | Presentational | `ResultsLeaderboard`, `CompletedRounds`, `RoundCard`, `StableTable`, `StatusIndicator`, `ConditionBadge`, ... | Typed props in, events out; no stores |
 | Wrappers       | `DashboardLayout`, `PanelCard`, `ModalDialog`                                                                 | Structure or behaviour through slots  |
 

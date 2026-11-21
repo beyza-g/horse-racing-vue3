@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import { usePreferencesStore } from '@/stores/preferences';
 import { useRaceStore } from '@/stores/race';
-import FollowChip from './FollowChip.vue';
 import PlaybackButton from './PlaybackButton.vue';
 import RoundProgress from './RoundProgress.vue';
 import SpeedSelector from './SpeedSelector.vue';
@@ -12,11 +10,6 @@ import ThemeToggle from './ThemeToggle.vue';
 
 const race = useRaceStore();
 const preferences = usePreferencesStore();
-
-const followed = computed(() => {
-  const id = preferences.followedHorseId;
-  return id === null ? undefined : race.horsesById.get(id);
-});
 </script>
 
 <template>
@@ -25,12 +18,6 @@ const followed = computed(() => {
     <div class="app-header__status">
       <RoundProgress :segments="race.progress" />
       <StatusIndicator :status="race.status" />
-      <FollowChip
-        v-if="followed"
-        :name="followed.name"
-        :color="followed.color"
-        @clear="preferences.clearFollow()"
-      />
     </div>
     <div class="app-header__controls">
       <ThemeToggle :theme="preferences.theme" @toggle="preferences.toggleTheme()" />

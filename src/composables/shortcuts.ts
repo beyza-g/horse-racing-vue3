@@ -24,7 +24,8 @@ export interface KeyInput {
 }
 
 /** Blocking dialogs; while one is open only its own keys work. */
-export type OpenDialog = 'completion' | 'confirm-regenerate' | 'standings';
+/** `final-standings` is the standings table after all six rounds (nothing left to lose). */
+export type OpenDialog = 'completion' | 'confirm-regenerate' | 'standings' | 'final-standings';
 
 export interface ShortcutContext {
   readonly dialog: OpenDialog | null;
@@ -33,9 +34,10 @@ export interface ShortcutContext {
 /**
  * Maps a key press to an action. Pure, so every rule is unit-tested:
  * - modifier combinations and typing in fields are never intercepted;
- * - while a dialog is open only its keys work: Escape dismisses; Enter
- *   confirms the completion dialog but never the destructive regenerate
- *   confirmation (there, only a focused button can confirm);
+ * - while a dialog is open only its keys work: Escape dismisses; Enter starts
+ *   a new program from the completion summary or the final standings (the
+ *   program is over, nothing is lost) but never confirms the destructive
+ *   regenerate confirmation or does anything in mid-program standings;
  * - Space on a focused button is left to the button (native activation).
  */
 export function resolveShortcut(input: KeyInput, context: ShortcutContext): ShortcutAction | null {
@@ -46,7 +48,9 @@ export function resolveShortcut(input: KeyInput, context: ShortcutContext): Shor
   if (context.dialog !== null) {
     if (input.key === 'Escape') return { type: 'dismissDialog' };
     if (input.key === 'Enter' && !onButton) {
-      return context.dialog === 'completion' ? { type: 'confirmDialog' } : { type: 'block' };
+      return context.dialog === 'completion' || context.dialog === 'final-standings'
+        ? { type: 'confirmDialog' }
+        : { type: 'block' };
     }
     if (space && !onButton) return { type: 'block' };
     return null;

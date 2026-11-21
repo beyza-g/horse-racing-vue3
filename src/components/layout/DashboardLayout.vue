@@ -35,7 +35,10 @@
   flex: 1;
   display: grid;
   gap: var(--gap);
-  padding: 10px;
+  /* The page scrolls below 1180 px: the bottom clearance lets the floating
+     follow badge rest below the last panel instead of covering it. It is
+     always there, so following never changes the page height. */
+  padding: 10px 10px var(--float-clearance);
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas: 'track' 'results' 'program' 'stable';
 }
@@ -65,7 +68,7 @@
 
 @media (min-width: 760px) {
   .dashboard__main {
-    padding: var(--gap);
+    padding: var(--gap) var(--gap) var(--float-clearance);
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-areas: 'track track' 'results results' 'program stable';
   }
@@ -86,6 +89,8 @@
   }
 
   .dashboard__main {
+    /* Fixed-height grid: the badge rests inside the Program panel instead. */
+    padding: var(--gap);
     min-height: 700px;
     grid-template-columns: 232px minmax(0, 1fr) 272px;
     grid-template-rows: minmax(0, 1fr) 336px;

@@ -130,8 +130,9 @@ src/
     useTheme.ts           # Mirrors the theme onto <html data-theme>
   components/
     layout/   DashboardLayout (named slots + responsive grid; structure only)
-    header/   AppHeader (container), RoundProgress, StatusIndicator, FollowChip,
+    header/   AppHeader (container), RoundProgress, StatusIndicator,
               ThemeToggle, SpeedSelector, PlaybackButton
+    follow/   FollowBadge (container, fixed bottom-right), FollowChip
     track/    RaceTrack (container, canvas host), EmptyProgramCard, ReadyCard (Start race at the gates)
     results/  ResultsPanel (container), ResultsLeaderboard, CompletedRounds
     program/  ProgramPanel (container), RoundCard
@@ -279,26 +280,26 @@ globals are disabled. Use the `@/` alias outside the pure layers; inside
 
 ## Edge cases that must be covered (tests + implementation)
 
-| Area                    | Expected behaviour                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Before a program exists | Start disabled; Space/1/2/4/F/T still safe; track shows the empty-program card; clicking the canvas is a no-op                                                                                                                                                                                                                                                                                                                                                 |
-| Tab switch / long frame | Wall `dt` clamped to 0.05 s; negative or `NaN` dt treated as 0; no jump in race state                                                                                                                                                                                                                                                                                                                                                                          |
-| Rapid toggles           | Any interleaving of pause/resume/speed changes yields sim time = Σ(clamped dt × speed while unpaused); identical results to an untouched run with the same seed                                                                                                                                                                                                                                                                                                |
-| Pause in every phase    | Countdown, running, settling and intermission all freeze; resume continues exactly where it stopped                                                                                                                                                                                                                                                                                                                                                            |
-| Mid-race regeneration   | Generate asks first (`requestNewProgram`) when a round is underway or results exist, pausing the race; cancel resumes only if it paused; confirm clears results, live order and inspect/view (the followed horse is kept); director resets to `ready` for round 1; no stale events                                                                                                                                                                             |
-| Completion              | Status `complete`; Start hidden; Generate is the single primary "new program" path; Space or Start cannot restart a finished program                                                                                                                                                                                                                                                                                                                           |
-| Dialogs                 | Completion, discard confirmation and standings: `aria-modal`, focus trap, background `inert`, focus restored; only one open at a time. Completion: initial focus on Generate, Enter = new program, Esc = view track. Confirmation: initial focus on Keep, Esc = keep, Enter never confirms. Standings: pauses a running race (resumes only if it paused), Esc closes; opened from the summary it hides (never dismisses) the summary and closing returns to it |
-| Keyboard shortcuts      | Ignored while typing in inputs; Space ignored when a button has focus (native activation instead); dialog shortcuts take precedence                                                                                                                                                                                                                                                                                                                            |
-| Follow dismissal        | Esc, the chip's close button, or a click on anything non-interactive (not buttons, links, fields, dialogs; the canvas clears only outside the lanes)                                                                                                                                                                                                                                                                                                           |
-| Boundaries              | Condition 1, 44 (optimum) and 100 all finish; 100 is out of condition, not the best; band edges (BCS 3.5 / 4 / 5 / 6.5) tested; photo finishes ordered by interpolated time, then horse ID; runners past the line are clamped visually                                                                                                                                                                                                                         |
-| Responsive              | Desktop/tablet/mobile grids with no horizontal overflow at 320 px; no layout shift when status, pills, times or labels change                                                                                                                                                                                                                                                                                                                                  |
-| Storage                 | `localStorage` unavailable or throwing ⇒ theme falls back to dark silently                                                                                                                                                                                                                                                                                                                                                                                     |
+| Area                    | Expected behaviour                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Before a program exists | Start disabled; Space/1/2/4/F/T still safe; track shows the empty-program card; clicking the canvas is a no-op                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Tab switch / long frame | Wall `dt` clamped to 0.05 s; negative or `NaN` dt treated as 0; no jump in race state                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Rapid toggles           | Any interleaving of pause/resume/speed changes yields sim time = Σ(clamped dt × speed while unpaused); identical results to an untouched run with the same seed                                                                                                                                                                                                                                                                                                                                                                                  |
+| Pause in every phase    | Countdown, running, settling and intermission all freeze; resume continues exactly where it stopped                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Mid-race regeneration   | Generate asks first (`requestNewProgram`) when a round is underway or results exist, pausing the race; cancel resumes only if it paused; confirm clears results, live order and inspect/view (the followed horse is kept); director resets to `ready` for round 1; no stale events                                                                                                                                                                                                                                                               |
+| Completion              | Status `complete`; Start hidden; Generate is the single primary "new program" path; Space or Start cannot restart a finished program                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Dialogs                 | Completion, discard confirmation and standings: `aria-modal`, focus trap, background `inert`, focus restored; only one open at a time. Completion: initial focus on Generate, Enter = new program, Esc = view track. Confirmation: initial focus on Keep, Esc = keep, Enter never confirms. Standings: pauses a running race (resumes only if it paused), Esc closes; opened from the summary it hides (never dismisses) the summary, shows a ‹ Summary back button and closing returns to it; Enter generates only once the program is complete |
+| Keyboard shortcuts      | Ignored while typing in inputs; Space ignored when a button has focus (native activation instead); dialog shortcuts take precedence                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Follow dismissal        | Esc, the chip's close button, or a click on anything non-interactive (not buttons, links, fields, dialogs; the canvas clears only outside the lanes)                                                                                                                                                                                                                                                                                                                                                                                             |
+| Boundaries              | Condition 1, 44 (optimum) and 100 all finish; 100 is out of condition, not the best; band edges (BCS 3.5 / 4 / 5 / 6.5) tested; photo finishes ordered by interpolated time, then horse ID; runners past the line are clamped visually                                                                                                                                                                                                                                                                                                           |
+| Responsive              | Desktop/tablet/mobile grids with no horizontal overflow at 320 px; no layout shift when status, pills, times, labels or the followed horse change                                                                                                                                                                                                                                                                                                                                                                                                |
+| Storage                 | `localStorage` unavailable or throwing ⇒ theme falls back to dark silently                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 
 ## Component conventions
 
 - **Containers** (`AppHeader`, `RaceTrack`, `ResultsPanel`, `ProgramPanel`,
-  `StablePanel`, `ProgramCompleteDialog`, `RegenerateConfirmDialog`,
-  `StandingsDialog`) read stores and wire events.
+  `StablePanel`, `FollowBadge`, `ProgramCompleteDialog`,
+  `RegenerateConfirmDialog`, `StandingsDialog`) read stores and wire events.
   **Presentational** components take typed props (view models from
   `stores/raceView.ts`) and emit events; they never import stores.
   **Wrappers** (`PanelCard`, `ModalDialog`, `DashboardLayout`) provide chrome,
@@ -318,9 +319,15 @@ globals are disabled. Use the `@/` alias outside the pure layers; inside
 
 ## UX contract
 
-- Header: title, 6-segment round progress, status dot + pill, "Following" chip,
+- Header: title, 6-segment round progress, status dot + pill,
   theme toggle, Focus, Generate Program, 1x/2x/4x segmented control,
-  Start/Pause/Resume (min-width 124 px).
+  Start/Pause/Resume (min-width 124 px). The header never shows follow state.
+- "Following <horse>" badge: shown only while a horse is followed (never as
+  hint text), fixed to the viewport's bottom-right corner, outside every
+  layout and never over the header or the track. Desktop: inside the
+  Program panel's empty lower corner. Below 1180 px: the page keeps a
+  permanent bottom clearance (`--float-clearance`) so the badge rests below
+  the last panel at the end of the scroll.
 - At the gates (round 1 only), a ReadyCard over the track offers **Start race**
   plus an "or press Space" hint; the canvas only dims. Focus moves to it only
   right after a Generate action (`data-action="generate"`).
@@ -329,8 +336,9 @@ globals are disabled. Use the `@/` alias outside the pure layers; inside
   with "Generate new program" (full width, primary) above two equal
   secondary actions, "Final standings" and "View track". Only "View track"
   dismisses the summary; "Final standings" opens the standings in front of
-  it, whose close ("Back to summary", Esc) returns to it with focus on
-  "Final standings", and whose footer also offers "Generate new program".
+  it, with a top-left "‹ Summary" back button (an ✕ only when not stacked on
+  the summary). Esc / "Back to summary" return to it with focus on "Final
+  standings"; Enter or the footer's primary button generates a new program.
 - Generate during countdown, running, settling or intermission opens
   "Discard the current program?" naming what would be lost; no confirmation
   at the gates or after completion.
@@ -353,7 +361,9 @@ globals are disabled. Use the `@/` alias outside the pure layers; inside
   and the pointer cursor appears only over lanes. Hovered lane is local state
   in `useRaceLoop` (scene field `hoveredLane`), never in a store. Horses sitting out the round use one
   inactive treatment (`--inactive-fg` / `--inactive-bg`), never filters.
-- Keyboard: Space start/pause, F focus, T theme, 1/2/4 speed, Esc, Enter in modal.
+- Keyboard: Space start/pause, F focus, T theme, 1/2/4 speed, Esc. Enter =
+  new program in the completion summary and final standings only (never in
+  the discard confirmation or mid-program standings).
 - Breakpoints: desktop ≥ 1180 px (3-column grid), tablet ≥ 760 px, mobile below.
   Implemented with CSS media queries only (no JS breakpoint composable); the
   canvas switches to its compact layout below 560 px of its own width.
