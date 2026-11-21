@@ -41,6 +41,8 @@ below are the visual source of truth.
 7. **Milestone verification gate.** A milestone is not done until
    `npm run verify` passes (ESLint with `--max-warnings 0`, Prettier check,
    `vue-tsc --build`, English check, Vitest) and `npm run build` succeeds.
+   UI changes also run `npm run test:e2e`; visual baselines are only updated
+   deliberately, after reviewing the diff.
    Then make an atomic commit and stop for review.
 
 ## Stack
@@ -119,12 +121,17 @@ src/
               ModalDialog (wrapper: teleport, aria-modal, focus trap), icons/*
   styles/     tokens.css (light/dark), base.css
   App.vue  main.ts
-tests/e2e/   Playwright specs (+ visual snapshots)
+tests/e2e/   Playwright against the production build, always with ?seed=42
+  race.spec.ts     # Flow: empty state, start, pause, regenerate, follow, theme, speed, completion dialog
+  layout.spec.ts   # No horizontal overflow (320-1440 px), grid order, zero layout shift
+  visual.spec.ts   # Screenshot baselines (canvas masked in layout shots; track compared separately)
+  __screenshots__/ # Baselines, suffixed by platform (regenerate with npm run test:e2e:update)
 scripts/     check-english.mjs
 tsconfig.base.json   shared strict options
 tsconfig.core.json   domain + playback, no DOM lib
 tsconfig.app.json    all of src with DOM lib
 tsconfig.node.json   tool configs
+tsconfig.e2e.json    Playwright config and specs (Node + DOM lib for page.evaluate)
 ```
 
 Unit specs live next to their module as `*.spec.ts`. Vitest runs two projects:
@@ -256,7 +263,8 @@ npm run typecheck      # vue-tsc --build
 npm run lint           # ESLint, zero warnings allowed
 npm run format         # Prettier write
 npm run check:english  # English-only guard
-npm run test:e2e       # Playwright (added in M6)
+npm run test:e2e       # Playwright E2E + visual (builds and serves on :4173)
+npm run test:e2e:update  # Refresh visual baselines after an intended UI change
 ```
 
 ## Roadmap
@@ -266,4 +274,4 @@ npm run test:e2e       # Playwright (added in M6)
 - [x] M3 — Playback controller + motion (`src/playback`) + Vitest specs (clamp, speed, pause, drift, phases, reset, stride/drive)
 - [x] M4 — Canvas renderer (`src/render`) + geometry specs
 - [x] M5 — Pinia stores + Vue components + responsive layout + keyboard shortcuts + modal focus lock (+ store/component specs)
-- [ ] M6 — Polish (transitions, a11y, zero-layout-shift audit) + Playwright E2E/visual (bonus)
+- [x] M6 — Polish (transitions, a11y, zero-layout-shift audit) + Playwright E2E/visual (bonus)
