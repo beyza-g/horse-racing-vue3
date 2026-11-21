@@ -15,6 +15,7 @@ defineEmits<{ generate: [] }>();
         variant="primary"
         size="lg"
         class="empty-program__action"
+        data-action="generate"
         @click="$emit('generate')"
       >
         Generate Program

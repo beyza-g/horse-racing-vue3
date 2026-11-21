@@ -3,7 +3,9 @@ import { computed, ref } from 'vue';
 import { useRaceLoop } from '@/composables/useRaceLoop';
 import { usePreferencesStore } from '@/stores/preferences';
 import { useRaceStore } from '@/stores/race';
+import { RUNNERS_PER_ROUND } from '@/domain';
 import EmptyProgramCard from './EmptyProgramCard.vue';
+import ReadyCard from './ReadyCard.vue';
 
 const race = useRaceStore();
 const preferences = usePreferencesStore();
@@ -16,9 +18,11 @@ const label = computed(() =>
     : 'Race track. No program yet.',
 );
 
+/** A lane follows its horse; anywhere else on the track (header band, margins) stops following. */
 function onCanvasClick(event: MouseEvent): void {
   const horseId = horseAtClientY(event.clientY);
   if (horseId !== null) preferences.toggleFollow(horseId);
+  else preferences.clearFollow();
 }
 </script>
 
@@ -32,7 +36,14 @@ function onCanvasClick(event: MouseEvent): void {
       :aria-label="label"
       @click="onCanvasClick"
     />
-    <EmptyProgramCard v-if="!race.hasProgram" @generate="race.generateProgram()" />
+    <EmptyProgramCard v-if="!race.hasProgram" @generate="race.requestNewProgram()" />
+    <ReadyCard
+      v-else-if="race.phase === 'ready'"
+      :round="race.roundIndex + 1"
+      :distance="race.board.distance"
+      :runners="RUNNERS_PER_ROUND"
+      @start="race.togglePlayback()"
+    />
   </div>
 </template>
 

@@ -71,7 +71,9 @@ describe('createTrackRenderer', () => {
     const director = createRaceDirector({ speed: 4 });
     director.load(roster, program);
     renderer.render(scene(director, { theme }));
-    expect(fake.texts.some((t) => t.includes('PRESS START'))).toBe(true);
+    // At the gates the canvas only dims; the title and Start action are DOM (ReadyCard).
+    expect(fake.texts).toContain('ROUND 1');
+    expect(fake.texts.some((t) => t.includes('PRESS START'))).toBe(false);
     director.togglePlayback();
     for (const phase of ['countdown', 'running', 'settling', 'intermission'] as const) {
       advanceTo(director, phase);

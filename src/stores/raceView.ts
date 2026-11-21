@@ -137,10 +137,42 @@ export function buildPlaybackControl(s: RaceViewState): PlaybackControlView {
   };
 }
 
+/** Phases in which generating a new program would discard a race or results. */
+const DISCARDING_PHASES: readonly DirectorPhase[] = [
+  'countdown',
+  'running',
+  'settling',
+  'intermission',
+];
+
+/**
+ * Whether Generate must ask first: only when a round is underway or official
+ * results would be lost. At the gates, before any program and after
+ * completion, generating is immediate.
+ */
+export function regenerateNeedsConfirmation(s: RaceViewState): boolean {
+  return hasProgram(s) && DISCARDING_PHASES.includes(s.phase);
+}
+
+/** What a regeneration would discard, e.g. "Round 3 in progress and 2 official results". */
+export function describeDiscardedProgress(s: RaceViewState): string {
+  const parts: string[] = [];
+  if (s.results[s.roundIndex] === undefined && s.roundIndex >= 0) {
+    parts.push(`Round ${s.roundIndex + 1} in progress`);
+  }
+  const official = s.results.length;
+  if (official > 0) parts.push(`${official} official result${official === 1 ? '' : 's'}`);
+  return parts.join(' and ');
+}
+
 /** Generate is the primary action before the first program and after completion. */
 export function isGeneratePrimary(s: RaceViewState): boolean {
   return !hasProgram(s) || s.phase === 'complete';
 }
+
+export type Medal = 'gold' | 'silver' | 'bronze';
+
+const MEDALS: readonly Medal[] = ['gold', 'silver', 'bronze'];
 
 export interface BoardRow {
   readonly horseId: HorseId;
@@ -151,6 +183,8 @@ export interface BoardRow {
   /** "1st" ... or "L3" (lane) while at the gates. */
   readonly position: string;
   readonly podium: boolean;
+  /** Gold, silver or bronze for the top three once the field has left the gates. */
+  readonly medal: Medal | null;
   readonly time: string;
   readonly finished: boolean;
   readonly emphasized: boolean;
@@ -220,6 +254,7 @@ export function buildBoard(s: RaceViewState): BoardView {
       top: entry.rank * BOARD_ROW_HEIGHT,
       position: atGates ? `L${lane + 1}` : formatOrdinal(entry.rank + 1),
       podium: !atGates && entry.rank < 3,
+      medal: atGates ? null : (MEDALS[entry.rank] ?? null),
       time: entry.label,
       finished: entry.finished,
       emphasized: followed || (entry.rank === 0 && entry.finished),

@@ -18,6 +18,7 @@ const board: BoardView = {
       top: 26,
       position: '2nd',
       podium: true,
+      medal: 'silver',
       time: '1:15.21',
       finished: true,
       emphasized: false,
@@ -30,6 +31,7 @@ const board: BoardView = {
       top: 0,
       position: '1st',
       podium: true,
+      medal: 'gold',
       time: '1:14.80',
       finished: true,
       emphasized: true,
@@ -47,6 +49,14 @@ describe('ResultsLeaderboard', () => {
       'transform: translateY(0px);',
     ]);
     expect(rows[1]!.find('button').attributes('aria-pressed')).toBe('true');
+  });
+
+  it('renders podium places as medal pills in a fixed-width column', () => {
+    const wrapper = mount(ResultsLeaderboard, { props: { board } });
+    const positions = wrapper.findAll('.leaderboard__position');
+    expect(positions[0]!.classes()).toEqual(expect.arrayContaining(['is-medal', 'is-silver']));
+    expect(positions[1]!.classes()).toEqual(expect.arrayContaining(['is-medal', 'is-gold']));
+    expect(positions[1]!.text()).toBe('1st');
   });
 
   it('emits follow and back-to-live', async () => {

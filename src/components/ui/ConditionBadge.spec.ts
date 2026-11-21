@@ -26,3 +26,16 @@ describe('ConditionBadge', () => {
     expect(wrapper.classes()).toContain('is-muted');
   });
 });
+
+describe('HorseBadge', () => {
+  it('uses the silk colour when active and the shared inactive chip when muted', async () => {
+    const { default: HorseBadge } = await import('./HorseBadge.vue');
+    const active = mount(HorseBadge, { props: { number: '05', color: 'rgb(1, 2, 3)' } });
+    expect(active.attributes('style')).toContain('background: rgb(1, 2, 3)');
+    const muted = mount(HorseBadge, {
+      props: { number: '05', color: 'rgb(1, 2, 3)', muted: true },
+    });
+    expect(muted.attributes('style')).toBeUndefined();
+    expect(muted.classes()).toContain('is-muted');
+  });
+});

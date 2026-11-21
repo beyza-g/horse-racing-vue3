@@ -1,13 +1,20 @@
 <script setup lang="ts">
 import type { PillTone } from '@/stores/raceView';
 
+/**
+ * Status pill. The `live` tone carries a pulsing dot: a solid dot in the
+ * pill's text colour with a ring that expands and fades (transform and
+ * opacity only, so it never affects layout). Under reduced motion the ring
+ * is hidden and the dot stays still.
+ */
 defineProps<{ label: string; tone: PillTone; size?: 'sm' | 'md' }>();
 </script>
 
 <template>
-  <span class="status-pill" :class="[`status-pill--${tone}`, `status-pill--${size ?? 'md'}`]">{{
-    label
-  }}</span>
+  <span class="status-pill" :class="[`status-pill--${tone}`, `status-pill--${size ?? 'md'}`]">
+    <span v-if="tone === 'live'" class="status-pill__pulse" aria-hidden="true" />
+    {{ label }}
+  </span>
 </template>
 
 <style scoped>
@@ -19,6 +26,7 @@ defineProps<{ label: string; tone: PillTone; size?: 'sm' | 'md' }>();
   font-weight: 700;
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   white-space: nowrap;
   flex: none;
 }
@@ -32,6 +40,45 @@ defineProps<{ label: string; tone: PillTone; size?: 'sm' | 'md' }>();
 .status-pill--live {
   background: var(--accent);
   color: var(--on-accent);
+  padding-left: 8px;
+}
+
+.status-pill__pulse {
+  position: relative;
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status-pill__pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: currentColor;
+  animation: live-pulse 1.6s ease-out infinite;
+}
+
+@keyframes live-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+
+  80%,
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-pill__pulse::after {
+    animation: none;
+    opacity: 0;
+  }
 }
 
 .status-pill--paused {

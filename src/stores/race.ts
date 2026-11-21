@@ -32,7 +32,9 @@ import {
   buildRounds,
   buildStable,
   buildStatus,
+  describeDiscardedProgress,
   isGeneratePrimary,
+  regenerateNeedsConfirmation,
   type RaceViewState,
 } from './raceView';
 
@@ -74,6 +76,9 @@ export const useRaceStore = defineStore('race', () => {
   const inspectedRound = ref<number | null>(null);
   const expandedRound = ref<number | null>(null);
   const completionDismissed = ref(false);
+  const confirmRegenerateOpen = ref(false);
+  /** True when opening the confirmation paused a running race, so cancelling resumes it. */
+  let resumeAfterCancel = false;
 
   const horsesById = computed<ReadonlyMap<HorseId, Horse>>(() => indexRoster(horses.value));
   const hasProgram = computed(() => program.value !== null);
@@ -111,6 +116,8 @@ export const useRaceStore = defineStore('race', () => {
 
   /** Draws a new program and resets to round 1 at the gates. Valid at any time, even mid-race. */
   function generateProgram(): void {
+    confirmRegenerateOpen.value = false;
+    resumeAfterCancel = false;
     if (horses.value.length === 0) initialize();
     const next = drawProgram(horses.value, forkRng(rng));
     program.value = next;
@@ -121,6 +128,34 @@ export const useRaceStore = defineStore('race', () => {
     completionDismissed.value = false;
     liveGate.reset();
     director.load(horses.value, next);
+    syncFromDirector();
+  }
+
+  /**
+   * The Generate button: generates immediately unless that would discard a
+   * race or official results, in which case it pauses (remembering whether it
+   * did) and asks for confirmation first.
+   */
+  function requestNewProgram(): void {
+    if (!regenerateNeedsConfirmation(viewState.value)) {
+      generateProgram();
+      return;
+    }
+    if (confirmRegenerateOpen.value) return;
+    resumeAfterCancel = director.pause();
+    syncFromDirector();
+    confirmRegenerateOpen.value = true;
+  }
+
+  function confirmNewProgram(): void {
+    generateProgram();
+  }
+
+  /** Keeps the current program; resumes only if the confirmation was what paused it. */
+  function cancelNewProgram(): void {
+    confirmRegenerateOpen.value = false;
+    if (resumeAfterCancel) director.resume();
+    resumeAfterCancel = false;
     syncFromDirector();
   }
 
@@ -207,6 +242,7 @@ export const useRaceStore = defineStore('race', () => {
   const stable = computed(() => buildStable(viewState.value));
   const completionWinners = computed(() => buildCompletionWinners(viewState.value));
   const completionOpen = computed(() => phase.value === 'complete' && !completionDismissed.value);
+  const discardedProgress = computed(() => describeDiscardedProgress(viewState.value));
 
   return {
     seed,
@@ -232,8 +268,13 @@ export const useRaceStore = defineStore('race', () => {
     stable,
     completionWinners,
     completionOpen,
+    confirmRegenerateOpen,
+    discardedProgress,
     initialize,
     generateProgram,
+    requestNewProgram,
+    confirmNewProgram,
+    cancelNewProgram,
     togglePlayback,
     advance,
     inspectRound,

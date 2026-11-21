@@ -8,7 +8,7 @@ const race = useRaceStore();
 </script>
 
 <template>
-  <ModalDialog :open="race.completionOpen" labelledby="program-complete-title">
+  <ModalDialog :open="race.completionOpen" labelledby="program-complete-title" reveal-delay="0.9s">
     <div class="complete__intro">
       <p class="complete__eyebrow mono">PROGRAM COMPLETE</p>
       <h2 id="program-complete-title" class="complete__title">All six rounds are official</h2>
@@ -31,7 +31,8 @@ const race = useRaceStore();
         variant="primary"
         size="lg"
         class="complete__primary"
-        @click="race.generateProgram()"
+        data-action="generate"
+        @click="race.requestNewProgram()"
       >
         Generate new program
       </AppButton>

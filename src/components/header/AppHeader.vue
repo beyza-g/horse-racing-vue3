@@ -45,7 +45,8 @@ const followed = computed(() => {
       <AppButton
         class="app-header__grow"
         :variant="race.generatePrimary ? 'primary' : 'secondary'"
-        @click="race.generateProgram()"
+        data-action="generate"
+        @click="race.requestNewProgram()"
       >
         Generate Program
       </AppButton>

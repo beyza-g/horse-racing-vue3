@@ -47,9 +47,11 @@ defineEmits<{ follow: [horseId: HorseId]; backToLive: [] }>();
           :title="`${row.name}${row.time ? ` · ${row.time}` : ''} · ${row.followed ? 'click to stop following' : 'click to follow'}`"
           @click="$emit('follow', row.horseId)"
         >
-          <span class="leaderboard__position mono" :class="{ 'is-podium': row.podium }">{{
-            row.position
-          }}</span>
+          <span
+            class="leaderboard__position mono"
+            :class="row.medal ? ['is-medal', `is-${row.medal}`] : null"
+            >{{ row.position }}</span
+          >
           <ColorTick :color="row.color" />
           <span class="leaderboard__name" :class="{ 'is-strong': row.emphasized }">{{
             row.name
@@ -156,8 +158,7 @@ defineEmits<{ follow: [horseId: HorseId]; backToLive: [] }>();
 }
 
 .leaderboard__button:hover {
-  background-color: var(--chip);
-  outline: 1px solid var(--hover-ring);
+  background-color: var(--row-hover);
 }
 
 .leaderboard__button.is-followed {
@@ -165,14 +166,41 @@ defineEmits<{ follow: [horseId: HorseId]; backToLive: [] }>();
   box-shadow: inset 0 0 0 1px var(--sel-line);
 }
 
-.leaderboard__position {
-  font-size: 11px;
-  color: var(--faint);
+.leaderboard__button.is-followed:hover {
+  background-image: linear-gradient(var(--row-hover-selected), var(--row-hover-selected));
 }
 
-.leaderboard__position.is-podium {
+/* Every position label has the same fixed box, so medals never shift alignment. */
+.leaderboard__position {
+  width: 32px;
+  height: 18px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--faint);
+  transition:
+    background-color 0.3s,
+    color 0.3s;
+}
+
+.leaderboard__position.is-medal {
   font-weight: 700;
-  color: var(--text);
+  color: var(--medal-ink);
+  box-shadow: inset 0 0 0 1px var(--medal-ring);
+}
+
+.leaderboard__position.is-gold {
+  background: var(--medal-gold);
+}
+
+.leaderboard__position.is-silver {
+  background: var(--medal-silver);
+}
+
+.leaderboard__position.is-bronze {
+  background: var(--medal-bronze);
 }
 
 .leaderboard__name {

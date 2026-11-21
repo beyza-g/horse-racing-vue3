@@ -60,11 +60,19 @@ defineProps<{ condition: ConditionView; muted?: boolean }>();
   font-weight: 600;
 }
 
-.is-muted {
-  color: var(--faint);
+/* Inactive: one gray for the value and the marker; the marker keeps its shape. */
+.is-muted,
+.is-muted .condition-badge__value {
+  color: var(--inactive-fg);
+  font-weight: 400;
 }
 
-.is-muted .condition-badge__value {
-  color: var(--faint);
+.is-muted.is-fit .condition-badge__marker,
+.is-muted.is-off .condition-badge__marker {
+  background: var(--inactive-fg);
+}
+
+.is-muted.is-near .condition-badge__marker {
+  box-shadow: inset 0 0 0 1.5px var(--inactive-fg);
 }
 </style>

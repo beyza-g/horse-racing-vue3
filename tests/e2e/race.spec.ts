@@ -31,14 +31,61 @@ test.describe('race flow', () => {
     await expect(playbackButton(page)).toHaveText('Pause');
   });
 
-  test('regenerating mid-race goes back to round 1 at the gates', async ({ page }) => {
+  test('regenerating mid-race asks first; keeping resumes, discarding resets', async ({ page }) => {
     await openApp(page);
     await generateAndStart(page, 4);
     await expect(page.getByText('Live order')).toBeVisible({ timeout: 15_000 });
     await generateButton(page).click();
+    const dialog = page.getByRole('dialog', { name: 'Discard the current program?' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText('will be discarded');
+    await expect(dialog.getByRole('button', { name: 'Keep this program' })).toBeFocused();
+    await expect(header(page).getByRole('status')).toContainText('Paused');
+
+    await page.keyboard.press('Enter');
+    await expect(dialog).toBeHidden();
+    await expect(playbackButton(page)).toHaveText('Pause');
+
+    await generateButton(page).click();
+    await dialog.getByRole('button', { name: 'Discard and generate' }).click();
     await expect(header(page).getByRole('status')).toContainText('Round 1 · 1200m');
     await expect(header(page).getByRole('status')).toContainText('At the gates');
     await expect(playbackButton(page)).toHaveText('Start');
+  });
+
+  test('the track offers Start race at the gates, focused after generating', async ({ page }) => {
+    await openApp(page);
+    await page.getByRole('heading', { name: 'No program yet' }).waitFor();
+    await page.locator('.empty-program').getByRole('button', { name: 'Generate Program' }).click();
+    const start = page.getByRole('button', { name: 'Start round 1' });
+    await expect(start).toBeVisible();
+    await expect(start).toBeFocused();
+    await page.keyboard.press('Space');
+    await expect(header(page).getByRole('status')).toContainText(/Starting|Live/);
+    await expect(start).toBeHidden();
+  });
+
+  test('clicking outside controls stops following', async ({ page }) => {
+    await openApp(page);
+    await page.locator('.stable-table__row').nth(2).click();
+    await expect(page.getByText('Following')).toBeVisible();
+    await header(page).getByRole('button', { name: '2x' }).click();
+    await expect(page.getByText('Following')).toBeVisible();
+    await page.getByRole('heading', { name: 'Program', exact: true }).click();
+    await expect(page.getByText('Following')).toBeHidden();
+  });
+
+  test('the live pill pulses, and holds still under reduced motion', async ({ page }) => {
+    const animation = () =>
+      page
+        .locator('header .status-pill__pulse')
+        .evaluate((el) => getComputedStyle(el, '::after').animationName);
+    await openApp(page);
+    await generateAndStart(page, 4);
+    await expect(header(page).locator('.status-pill--live')).toBeVisible({ timeout: 15_000 });
+    expect(await animation()).toMatch(/^live-pulse/); // Vue suffixes scoped keyframes with a hash
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    expect(await animation()).toBe('none');
   });
 
   test('follow a horse from the stable and stop with Escape', async ({ page }) => {

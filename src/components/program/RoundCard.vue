@@ -179,13 +179,16 @@ const lineupId = `round-${props.card.index + 1}-lineup`;
 }
 
 .round-card__row:hover {
-  background-color: var(--chip);
-  outline: 1px solid var(--hover-ring);
+  background-color: var(--row-hover);
 }
 
 .round-card__row.is-followed {
   background-image: linear-gradient(var(--sel-bg), var(--sel-bg));
   box-shadow: inset 0 0 0 1px var(--sel-line);
+}
+
+.round-card__row.is-followed:hover {
+  background-image: linear-gradient(var(--row-hover-selected), var(--row-hover-selected));
 }
 
 .round-card__lane {

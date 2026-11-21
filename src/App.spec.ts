@@ -109,16 +109,132 @@ describe('App', () => {
     expect(w.find('.follow-chip').exists()).toBe(false);
   });
 
-  it('regenerating mid-race resets to round 1 at the gates', async () => {
-    const { wrapper: w, race } = mountApp();
-    race.generateProgram();
-    race.togglePlayback();
-    for (let i = 0; i < 400; i++) race.advance(1 / 60);
-    expect(race.phase).toBe('running');
-    await button(w, 'Generate Program').trigger('click');
-    expect(race.phase).toBe('ready');
-    expect(race.results).toEqual([]);
-    expect(button(w, 'Start').exists()).toBe(true);
+  describe('regenerating mid-race', () => {
+    async function midRace() {
+      const ctx = mountApp();
+      ctx.race.generateProgram();
+      ctx.race.togglePlayback();
+      for (let i = 0; i < 400; i++) ctx.race.advance(1 / 60);
+      expect(ctx.race.phase).toBe('running');
+      await button(ctx.wrapper, 'Generate Program').trigger('click');
+      await nextTick();
+      await nextTick();
+      return ctx;
+    }
+    const dialog = () => document.querySelector('[role="dialog"]');
+    const dialogButton = (text: string) =>
+      [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find(
+        (b) => b.textContent.trim() === text,
+      )!;
+
+    it('asks first, pauses the race and focuses the safe choice', async () => {
+      const { race } = await midRace();
+      expect(race.confirmRegenerateOpen).toBe(true);
+      expect(race.paused).toBe(true);
+      expect(race.phase).toBe('running');
+      expect(dialog()?.textContent).toContain('Round 1 in progress will be discarded');
+      expect(dialog()?.getAttribute('aria-describedby')).toBe('regenerate-description');
+      expect(document.activeElement?.textContent.trim()).toBe('Keep this program');
+      expect(document.getElementById('app')?.hasAttribute('inert')).toBe(true);
+    });
+
+    it('Keep this program resumes exactly where it was', async () => {
+      const { race } = await midRace();
+      const ticks = race.getDirector().race!.tickCount;
+      dialogButton('Keep this program').click();
+      await nextTick();
+      expect(race.confirmRegenerateOpen).toBe(false);
+      expect(race.paused).toBe(false);
+      expect(race.getDirector().race!.tickCount).toBe(ticks);
+    });
+
+    it('Escape cancels; Enter outside a button never confirms', async () => {
+      const { race } = await midRace();
+      await press('Enter');
+      expect(race.confirmRegenerateOpen).toBe(true);
+      expect(race.phase).toBe('running');
+      await press('Escape');
+      expect(race.confirmRegenerateOpen).toBe(false);
+      expect(race.paused).toBe(false);
+    });
+
+    it('a race paused by the user stays paused after cancelling', () => {
+      const { race } = mountApp();
+      race.generateProgram();
+      race.togglePlayback();
+      for (let i = 0; i < 400; i++) race.advance(1 / 60);
+      race.togglePlayback();
+      race.requestNewProgram();
+      race.cancelNewProgram();
+      expect(race.paused).toBe(true);
+    });
+
+    it('Discard and generate resets to round 1 at the gates', async () => {
+      const { wrapper: w, race } = await midRace();
+      dialogButton('Discard and generate').click();
+      await nextTick();
+      expect(race.phase).toBe('ready');
+      expect(race.results).toEqual([]);
+      expect(race.confirmRegenerateOpen).toBe(false);
+      expect(button(w, 'Start').exists()).toBe(true);
+    });
+  });
+
+  describe('starting from the track', () => {
+    it('shows a Start race card at the gates, focused after generating', async () => {
+      const { wrapper: w, race } = mountApp();
+      await w.find('.empty-program button').trigger('click');
+      await nextTick();
+      const start = w.find('.ready-card button');
+      expect(start.exists()).toBe(true);
+      expect(start.attributes('aria-label')).toBe('Start round 1');
+      expect(w.find('.ready-card').text()).toContain('ROUND 1 · 1200M');
+      expect(document.activeElement).toBe(start.element);
+      await start.trigger('click');
+      expect(race.phase).toBe('countdown');
+      expect(w.find('.ready-card').exists()).toBe(false);
+    });
+
+    it('does not steal focus from an unrelated control', async () => {
+      const { wrapper: w, race } = mountApp();
+      const speed = w.findAll('.speed-selector__option')[1]!.element as HTMLButtonElement;
+      speed.focus();
+      race.generateProgram();
+      await nextTick();
+      expect(w.find('.ready-card').exists()).toBe(true);
+      expect(document.activeElement).toBe(speed);
+    });
+
+    it('generating at the gates or after completion never asks', () => {
+      const { race } = mountApp();
+      race.generateProgram();
+      race.requestNewProgram();
+      expect(race.confirmRegenerateOpen).toBe(false);
+      expect(race.phase).toBe('ready');
+    });
+  });
+
+  describe('dismissing the follow by clicking outside', () => {
+    it('clears on a non-interactive area, keeps it on controls and while a dialog is open', async () => {
+      const { wrapper: w, prefs, race } = mountApp();
+      prefs.toggleFollow(3);
+      await w.find('.panel-card__title').trigger('click');
+      expect(prefs.followedHorseId).toBeNull();
+
+      prefs.toggleFollow(3);
+      await w.findAll('.speed-selector__option')[2]!.trigger('click');
+      expect(prefs.followedHorseId).toBe(3);
+      await w.findAll('.stable-table__row')[5]!.trigger('click');
+      expect(prefs.followedHorseId).toBe(6);
+
+      race.generateProgram();
+      race.togglePlayback();
+      for (let i = 0; i < 400; i++) race.advance(1 / 60);
+      race.requestNewProgram();
+      await nextTick();
+      document.body.click();
+      expect(prefs.followedHorseId).toBe(6);
+    });
   });
 
   describe('completion', () => {

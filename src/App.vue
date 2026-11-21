@@ -6,7 +6,10 @@ import ProgramPanel from '@/components/program/ProgramPanel.vue';
 import ResultsPanel from '@/components/results/ResultsPanel.vue';
 import StablePanel from '@/components/stable/StablePanel.vue';
 import RaceTrack from '@/components/track/RaceTrack.vue';
-import type { ShortcutAction } from '@/composables/shortcuts';
+import { computed } from 'vue';
+import RegenerateConfirmDialog from '@/components/dialogs/RegenerateConfirmDialog.vue';
+import type { OpenDialog, ShortcutAction } from '@/composables/shortcuts';
+import { useOutsideClick } from '@/composables/useOutsideClick';
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts';
 import { useTheme } from '@/composables/useTheme';
 import { usePreferencesStore } from '@/stores/preferences';
@@ -38,14 +41,27 @@ function dispatch(action: ShortcutAction): void {
       race.generateProgram();
       break;
     case 'dismissDialog':
-      race.dismissCompletion();
+      if (race.confirmRegenerateOpen) race.cancelNewProgram();
+      else race.dismissCompletion();
       break;
     case 'block':
       break;
   }
 }
 
-useKeyboardShortcuts(() => ({ dialogOpen: race.completionOpen }), dispatch);
+const openDialog = computed<OpenDialog | null>(() =>
+  race.confirmRegenerateOpen ? 'confirm-regenerate' : race.completionOpen ? 'completion' : null,
+);
+
+useKeyboardShortcuts(() => ({ dialog: openDialog.value }), dispatch);
+
+// Clicking somewhere non-interactive stops following (Esc does the same).
+useOutsideClick(
+  () => openDialog.value === null && preferences.followedHorseId !== null,
+  () => {
+    preferences.clearFollow();
+  },
+);
 </script>
 
 <template>
@@ -57,4 +73,5 @@ useKeyboardShortcuts(() => ({ dialogOpen: race.completionOpen }), dispatch);
     <template #stable><StablePanel /></template>
   </DashboardLayout>
   <ProgramCompleteDialog />
+  <RegenerateConfirmDialog />
 </template>

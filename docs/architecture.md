@@ -122,13 +122,23 @@ the UI needs:
 | Results                       | When a round becomes official                            |
 | Live order                    | At most every 250 ms, immediately when a runner finishes |
 | Inspected and expanded rounds | On user actions and round changes                        |
+| Regenerate confirmation open  | When Generate would discard progress                     |
 
 Per-frame positions never enter reactive state; the renderer reads them from
 the director directly. Derived displays come from **pure view-model builders**
 in `stores/raceView.ts` (status line, board rows, program cards, stable rows,
-condition badges), which are tested without Vue or Pinia. A second store holds
-viewer preferences: theme (persisted, tolerant of blocked storage), speed,
-focus mode and the followed horse.
+condition badges, medals, and whether regenerating needs confirmation), which
+are tested without Vue or Pinia. A second store holds viewer preferences:
+theme (persisted, tolerant of blocked storage), speed, focus mode and the
+followed horse.
+
+**Guarded regeneration.** The director itself accepts a new program in any
+phase. The store's `requestNewProgram` adds the user-facing guard: when a
+round is underway or official results exist, it pauses the race (remembering
+whether it was the one to pause) and opens a confirmation; cancelling resumes
+only if it paused. Pausing is already deterministic, so a cancelled
+confirmation leaves the eventual results unchanged, which a store spec
+asserts over a full program.
 
 ## Rendering
 
@@ -148,7 +158,7 @@ follows its container with a `ResizeObserver`.
 - `standingsVersion` changes only when the order or a placing changes, so the
   store skips redundant updates.
 - Stamina weakness is computed once per runner per race, not per tick.
-- Production bundle: about 153 kB of JavaScript (56 kB gzipped) and 27 kB of
+- Production bundle: about 156 kB of JavaScript (57 kB gzipped) and 31 kB of
   CSS; fonts are self-hosted, so there is no external request or font swap.
 
 ## Tooling

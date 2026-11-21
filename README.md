@@ -24,9 +24,9 @@ results fully reproducible; the end-to-end tests rely on this.
 | ------------------------- | --------------------------------------------------------------------- |
 | `npm run verify`          | ESLint, Prettier check, `vue-tsc`, English-only check, all unit tests |
 | `npm run build`           | Type-check and production build                                       |
-| `npm run test`            | Vitest unit and component tests (504)                                 |
+| `npm run test`            | Vitest unit and component tests (543)                                 |
 | `npm run test:coverage`   | The same, with V8 coverage                                            |
-| `npm run test:e2e`        | Playwright end-to-end, layout and visual tests (31) on the build      |
+| `npm run test:e2e`        | Playwright end-to-end, layout and visual tests (34) on the build      |
 | `npm run test:e2e:update` | Refresh visual baselines after an intended UI change                  |
 
 The first E2E run needs a browser: `npx playwright install chromium`.
@@ -35,16 +35,22 @@ The first E2E run needs a browser: `npx playwright install chromium`.
 
 1. **Generate Program** draws six rounds (1200 m to 2200 m), each with ten of
    the twenty horses.
-2. **Start** (or Space) runs the rounds one after another: countdown, race,
-   result, short intermission, next round.
+2. **Start race** on the track (or Space, or Start in the header) runs the
+   rounds one after another: countdown, race, result, short intermission,
+   next round.
 3. Pause and resume at any time, switch between 1x, 2x and 4x, and click any
-   horse (on the track or in a table) to follow it.
+   horse (on the track or in a table) to follow it. Click anywhere that is
+   not a control, or press `Esc`, to stop following.
 4. When all six rounds are official, a summary lists the winners and
-   **Generate new program** starts again.
+   **Generate new program** starts again. Generating while a program is
+   still in progress asks for confirmation first, and pauses the race while
+   you decide.
 
 Keyboard: `Space` start/pause, `1` `2` `4` speed, `F` focus mode, `T` theme,
 `Esc` stop following, then leave focus mode. In the summary dialog, `Enter`
-starts a new program and `Esc` returns to the track.
+starts a new program and `Esc` returns to the track. In the "discard the
+current program?" dialog, `Esc` keeps the program; only the focused button
+can confirm.
 
 ## The brief, requirement by requirement
 
@@ -59,7 +65,7 @@ starts a new program and `Esc` returns to the track.
 | Clean, scalable code                       | Layered architecture with enforced boundaries ([architecture](docs/architecture.md))                             |
 | Vuex or Pinia                              | Pinia setup stores                                                                                               |
 | Component-based design                     | Containers, presentational components and slot wrappers ([UI/UX](docs/ux.md#component-structure))                |
-| Bonus: unit, E2E and visual tests          | 504 Vitest tests, 31 Playwright tests including screenshot baselines ([quality](docs/quality.md))                |
+| Bonus: unit, E2E and visual tests          | 543 Vitest tests, 34 Playwright tests including screenshot baselines ([quality](docs/quality.md))                |
 
 One interpretation to note: the brief says the horse list contains "between 1
 and 20 horses" but also requires exactly 20 available horses. The game always

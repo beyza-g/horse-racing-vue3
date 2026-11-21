@@ -31,6 +31,20 @@
   --cond-fit: #5fcf86;
   --cond-near: #f2b544;
   --cond-off: #ef7a5a;
+  /* Rows: hover is a soft wash only; selection (followed) adds the accent ring. */
+  --row-hover: rgba(236, 234, 227, 0.055);
+  --row-hover-selected: rgba(242, 181, 68, 0.2);
+  /* One inactive treatment (horses sitting out the current round). */
+  --inactive-fg: var(--faint);
+  --inactive-bg: var(--chip-strong);
+  /* Podium medals, shared with the canvas palette. */
+  --medal-gold: #f2b544;
+  --medal-silver: #d5d9dc;
+  --medal-bronze: #d69c6a;
+  --medal-ink: #14110a;
+  --medal-ring: transparent;
+  --danger: #ef7a5a;
+  --on-danger: #1a0b06;
   --label-w: 400;
   --title-w: 700;
 }
@@ -62,6 +76,17 @@
   --cond-fit: #1f8a47;
   --cond-near: #a86a07;
   --cond-off: #c2410c;
+  --row-hover: rgba(16, 20, 17, 0.045);
+  --row-hover-selected: #f9e3b3;
+  --inactive-fg: var(--faint);
+  --inactive-bg: var(--chip-strong);
+  --medal-gold: #e2a136;
+  --medal-silver: #d5d9dc;
+  --medal-bronze: #d69c6a;
+  --medal-ink: #14110a;
+  --medal-ring: rgba(16, 20, 17, 0.18);
+  --danger: #c2410c;
+  --on-danger: #ffffff;
   --label-w: 500;
   --title-w: 760;
 }

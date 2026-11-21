@@ -2,7 +2,7 @@
 /** The app's button. Always a native <button type="button">; extra attributes fall through. */
 withDefaults(
   defineProps<{
-    variant?: 'primary' | 'secondary';
+    variant?: 'primary' | 'secondary' | 'danger';
     size?: 'md' | 'lg';
     /** Visual "on" state for toggle buttons (pair it with aria-pressed). */
     active?: boolean;
@@ -68,6 +68,18 @@ withDefaults(
 }
 
 .app-button--primary:hover:not(:disabled) {
+  background-image: none;
+  filter: brightness(1.06);
+}
+
+.app-button--danger {
+  border-color: var(--danger);
+  background-color: var(--danger);
+  color: var(--on-danger);
+  font-weight: 700;
+}
+
+.app-button--danger:hover:not(:disabled) {
   background-image: none;
   filter: brightness(1.06);
 }

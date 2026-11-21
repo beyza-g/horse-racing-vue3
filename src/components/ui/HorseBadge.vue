@@ -1,12 +1,19 @@
 <script setup lang="ts">
-/** The horse's number on its unique silk colour. */
+/**
+ * The horse's number on its unique silk colour. When muted (sitting out the
+ * current round) it switches to the shared inactive chip rather than a
+ * desaturated silk, which would give every horse a different gray.
+ */
 defineProps<{ number: string; color: string; muted?: boolean }>();
 </script>
 
 <template>
-  <span class="horse-badge mono" :class="{ 'is-muted': muted }" :style="{ background: color }">{{
-    number
-  }}</span>
+  <span
+    class="horse-badge mono"
+    :class="{ 'is-muted': muted }"
+    :style="muted ? undefined : { background: color }"
+    >{{ number }}</span
+  >
 </template>
 
 <style scoped>
@@ -22,12 +29,12 @@ defineProps<{ number: string; color: string; muted?: boolean }>();
   justify-content: center;
   flex: none;
   transition:
-    filter 0.4s,
-    opacity 0.4s;
+    background-color 0.4s,
+    color 0.4s;
 }
 
 .is-muted {
-  filter: grayscale(1);
-  opacity: 0.45;
+  background: var(--inactive-bg);
+  color: var(--inactive-fg);
 }
 </style>

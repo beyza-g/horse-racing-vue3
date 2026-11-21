@@ -62,15 +62,53 @@ has a key. The full description ("Condition 44 of 100 · Race fit · body
 condition 4.5 of 9 (Moderately thin)") is the badge's accessible label and
 tooltip.
 
-**One path to a new program.** Once a program is complete, Start disappears
-and Generate becomes the primary button, so there is never a confusing
-"restart" of a finished program. Generate works at any moment, including
-mid-race, and always resets to round 1 at the gates.
+**Start where the user is looking.** After generating, the track shows a
+card with the round, distance and field size, a primary **Start race**
+button and an "or press Space" hint, instead of a canvas caption pointing at
+the header. Focus moves to that button only when the user has just generated
+(so Space or Enter starts the race), never away from another control. The
+card is an overlay, so it cannot shift the layout; later rounds start
+automatically, so it appears only for round 1.
 
-**Follow a horse from anywhere.** Clicking a lane on the track, or a row in
-the stable, program or results, follows that horse: its lane is highlighted,
-the other horses dim, a guide line tracks it and the header shows a
-"Following" chip. `Esc` stops following.
+**One path to a new program, with a guard.** Once a program is complete,
+Start disappears and Generate becomes the primary button, so there is never
+a confusing "restart" of a finished program. Generate works at any moment,
+but when it would discard a race in progress or official results, it first
+asks "Discard the current program?", names exactly what would be lost
+("Round 3 in progress and 2 official results") and pauses the race while
+the user decides. The safe choice, **Keep this program**, comes first and has
+focus; cancelling resumes only if the dialog was what paused the race. At the
+gates and after completion nothing is lost, so Generate stays one click.
+
+**Follow a horse from anywhere, dismiss it the same way.** Clicking a lane on
+the track, or a row in the stable, program or results, follows that horse:
+its lane is highlighted, the other horses dim, a guide line tracks it and the
+header shows a "Following" chip. To stop, press `Esc`, use the chip's close
+button, or click anything that is not a control: panel headings, empty
+panel space, the page background, or the track outside the lanes. Buttons,
+links, form fields and dialogs never clear it, so no intentional interaction
+is lost (the rule is one pure function, `isDismissClick`).
+
+**Hover is not selection.** Hovering a runner row shows a soft wash only
+(`--row-hover`); the followed row keeps the accent fill and ring, and
+hovering it simply deepens the fill. The two states can never be confused.
+
+**Live means live.** Every Live pill carries a small dot with an expanding
+ring, so a running race is noticeable at a glance. It animates only
+`transform` and `opacity`, uses the pill's own text colour (legible in both
+themes), is hidden from assistive technology, and holds still under
+reduced motion.
+
+**Podium at a glance.** In the results board, 1st, 2nd and 3rd are gold,
+silver and bronze pills matching the medals on the track; every position
+sits in the same fixed-width, centred box, so the column stays aligned while
+rows reorder.
+
+**One way to look inactive.** Horses sitting out the current round use a
+single treatment from two tokens (`--inactive-fg`, `--inactive-bg`): a
+neutral number chip, faint text and a gray condition marker that keeps its
+shape. Previously each silk colour was desaturated with a filter, which
+produced a different gray for every horse.
 
 **Focus mode** (`F`) dims the side panels so the track stands out, without
 hiding any information.
@@ -105,10 +143,12 @@ and after Start, Pause and Resume and requires identical boxes.
 | `Esc`       | Stop following, then leave focus mode            |
 | `Enter`     | In the completion dialog: generate a new program |
 | `Esc`       | In the completion dialog: view the track         |
+| `Esc`       | In the discard confirmation: keep the program    |
 
 Shortcuts are ignored while typing in a field and with modifier keys. Space
 on a focused button activates that button instead of toggling playback twice.
-While the dialog is open, only its own keys work.
+While a dialog is open, only its own keys work, and `Enter` never confirms
+the destructive discard: only the focused button can.
 
 ## Accessibility
 
@@ -117,14 +157,16 @@ While the dialog is open, only its own keys work.
 - The status line is an `aria-live="polite"` region, so state changes are
   announced without interrupting.
 - The canvas has `role="img"` with a label that describes the current state.
-- The completion dialog is `aria-modal`: focus moves to its primary button,
-  Tab cycles inside it, the page behind it is made `inert`, and focus returns
-  to where it was when it closes.
+- Both dialogs are `aria-modal`: focus moves inside (the primary action in
+  the completion dialog, the safe action in the discard confirmation), Tab
+  cycles inside, the page behind is made `inert`, and focus returns to where
+  it was when they close. The confirmation is also `aria-describedby` its
+  warning text.
 - Visible focus rings on every control; icon-only buttons have labels.
 - Theme colours are tokens tuned separately for light and dark; colour is
   never the only carrier of meaning (condition markers, medals with text).
-- `prefers-reduced-motion` shortens CSS transitions. The canvas animation is
-  the game itself and still runs.
+- `prefers-reduced-motion` shortens CSS transitions and stops the Live pulse.
+  The canvas animation is the game itself and still runs.
 
 ## Theme and visual language
 

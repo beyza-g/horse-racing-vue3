@@ -12,8 +12,9 @@ const key = (patch: Partial<KeyInput>): KeyInput => ({
   ...patch,
 });
 const space = key({ key: ' ', code: 'Space' });
-const closed = { dialogOpen: false };
-const open = { dialogOpen: true };
+const closed = { dialog: null };
+const open = { dialog: 'completion' } as const;
+const confirming = { dialog: 'confirm-regenerate' } as const;
 
 describe('resolveShortcut', () => {
   it('maps the documented keys', () => {
@@ -54,6 +55,15 @@ describe('resolveShortcut', () => {
     expect(resolveShortcut(key({ key: 'Enter' }), open)).toEqual({ type: 'confirmDialog' });
     expect(resolveShortcut(space, open)).toEqual({ type: 'block' });
     for (const k of ['f', 't', '4']) expect(resolveShortcut(key({ key: k }), open)).toBeNull();
+  });
+
+  it('never lets Enter confirm the destructive regenerate dialog', () => {
+    expect(resolveShortcut(key({ key: 'Enter' }), confirming)).toEqual({ type: 'block' });
+    expect(resolveShortcut(key({ key: 'Escape' }), confirming)).toEqual({ type: 'dismissDialog' });
+    expect(resolveShortcut(space, confirming)).toEqual({ type: 'block' });
+    expect(resolveShortcut(key({ key: 'Enter', targetTag: 'BUTTON' }), confirming)).toBeNull();
+    for (const k of ['f', 't', '4'])
+      expect(resolveShortcut(key({ key: k }), confirming)).toBeNull();
   });
 
   it('lets a focused dialog button handle Enter and Space natively', () => {

@@ -97,13 +97,16 @@ defineEmits<{ follow: [horseId: HorseId] }>();
 }
 
 .stable-table__row:hover {
-  background-color: var(--chip);
-  outline: 1px solid var(--hover-ring);
+  background-color: var(--row-hover);
 }
 
 .stable-table__row.is-followed {
   background-image: linear-gradient(var(--sel-bg), var(--sel-bg));
   box-shadow: inset 0 0 0 1px var(--sel-line);
+}
+
+.stable-table__row.is-followed:hover {
+  background-image: linear-gradient(var(--row-hover-selected), var(--row-hover-selected));
 }
 
 .stable-table__name {
@@ -120,7 +123,7 @@ defineEmits<{ follow: [horseId: HorseId] }>();
 }
 
 .is-out .stable-table__name {
-  color: var(--faint);
+  color: var(--inactive-fg);
 }
 
 .stable-table__lane {

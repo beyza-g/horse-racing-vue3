@@ -23,15 +23,19 @@ export interface KeyInput {
   readonly targetEditable: boolean;
 }
 
+/** Blocking dialogs; while one is open only its own keys work. */
+export type OpenDialog = 'completion' | 'confirm-regenerate';
+
 export interface ShortcutContext {
-  /** The blocking completion dialog is open: only its own keys work. */
-  readonly dialogOpen: boolean;
+  readonly dialog: OpenDialog | null;
 }
 
 /**
  * Maps a key press to an action. Pure, so every rule is unit-tested:
  * - modifier combinations and typing in fields are never intercepted;
- * - while the dialog is open only Enter (confirm) and Escape (dismiss) work;
+ * - while a dialog is open only its keys work: Escape dismisses; Enter
+ *   confirms the completion dialog but never the destructive regenerate
+ *   confirmation (there, only a focused button can confirm);
  * - Space on a focused button is left to the button (native activation).
  */
 export function resolveShortcut(input: KeyInput, context: ShortcutContext): ShortcutAction | null {
@@ -39,9 +43,11 @@ export function resolveShortcut(input: KeyInput, context: ShortcutContext): Shor
   const space = input.code === 'Space' || input.key === ' ';
   const onButton = input.targetTag === 'BUTTON';
 
-  if (context.dialogOpen) {
+  if (context.dialog !== null) {
     if (input.key === 'Escape') return { type: 'dismissDialog' };
-    if (input.key === 'Enter' && !onButton) return { type: 'confirmDialog' };
+    if (input.key === 'Enter' && !onButton) {
+      return context.dialog === 'completion' ? { type: 'confirmDialog' } : { type: 'block' };
+    }
     if (space && !onButton) return { type: 'block' };
     return null;
   }

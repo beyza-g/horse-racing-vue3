@@ -119,6 +119,72 @@ describe('generateProgram', () => {
   });
 });
 
+describe('requestNewProgram', () => {
+  it('generates immediately when nothing would be lost', () => {
+    const { race } = setup();
+    race.requestNewProgram();
+    expect(race.phase).toBe('ready');
+    const first = race.program;
+    race.requestNewProgram();
+    expect(race.program).not.toBe(first);
+    expect(race.confirmRegenerateOpen).toBe(false);
+  });
+
+  it.each<DirectorPhase>(['countdown', 'running', 'settling', 'intermission'])(
+    'asks during %s, pausing without losing anything',
+    (phase) => {
+      const { race } = setup();
+      race.generateProgram();
+      race.togglePlayback();
+      advanceUntil(race, atPhase(race, phase));
+      const program = race.program;
+      const results = race.results;
+      race.requestNewProgram();
+      expect(race.confirmRegenerateOpen).toBe(true);
+      expect(race.paused).toBe(true);
+      expect(race.program).toBe(program);
+      expect(race.results).toBe(results);
+      for (let i = 0; i < 120; i++) race.advance(FRAME);
+      expect(race.phase).toBe(phase);
+      race.cancelNewProgram();
+      expect(race.paused).toBe(false);
+    },
+  );
+
+  it('confirming discards and resets; a second request while open is ignored', () => {
+    const { race } = setup();
+    race.generateProgram();
+    race.togglePlayback();
+    advanceUntil(race, atPhase(race, 'running'));
+    race.requestNewProgram();
+    race.requestNewProgram();
+    race.confirmNewProgram();
+    expect(race.confirmRegenerateOpen).toBe(false);
+    expect(race.phase).toBe('ready');
+    expect(race.paused).toBe(false);
+  });
+
+  it('keeps the outcome deterministic: cancelling changes no result', () => {
+    const run = (interrupt: boolean) => {
+      setActivePinia(createPinia());
+      const { race, prefs } = setup();
+      prefs.setSpeed(4);
+      race.generateProgram();
+      race.togglePlayback();
+      for (let i = 0; i < 200_000 && race.phase !== 'complete'; i++) {
+        if (interrupt && i % 500 === 250 && race.phase === 'running') {
+          race.requestNewProgram();
+          for (let k = 0; k < 30; k++) race.advance(FRAME);
+          race.cancelNewProgram();
+        }
+        race.advance(FRAME);
+      }
+      return race.results;
+    };
+    expect(run(true)).toEqual(run(false));
+  });
+});
+
 describe('playing a full program', () => {
   it('publishes results in order that match the pure engine, then completes', () => {
     const { race, prefs } = setup();

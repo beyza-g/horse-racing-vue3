@@ -11,10 +11,14 @@ const props = withDefaults(
   defineProps<{
     open: boolean;
     labelledby: string;
+    /** Id of the element describing the dialog, announced with its title. */
+    describedby?: string;
     /** Selector of the background made inert while open. */
     inertSelector?: string;
+    /** Delay before the reveal animation (e.g. to let a winner card settle). */
+    revealDelay?: string;
   }>(),
-  { inertSelector: '#app' },
+  { describedby: '', inertSelector: '#app', revealDelay: '0s' },
 );
 
 const panel = ref<HTMLElement | null>(null);
@@ -29,13 +33,14 @@ useFocusTrap(panel, toRef(props, 'open'), {
 <template>
   <Teleport to="body">
     <Transition name="modal" appear>
-      <div v-if="open" class="modal-scrim">
+      <div v-if="open" class="modal-scrim" :style="{ '--reveal-delay': revealDelay }">
         <div
           ref="panel"
           class="modal-panel"
           role="dialog"
           aria-modal="true"
           :aria-labelledby="labelledby"
+          :aria-describedby="describedby || undefined"
           tabindex="-1"
         >
           <slot />
@@ -74,17 +79,17 @@ useFocusTrap(panel, toRef(props, 'open'), {
   outline: none;
 }
 
-/* The reveal waits for the last winner card to settle (no timers in game flow). */
+/* Optional reveal delay via CSS (no timers in game flow). */
 .modal-enter-active {
   transition:
-    background 0.8s ease 0.9s,
-    backdrop-filter 0.8s ease 0.9s;
+    background 0.8s ease var(--reveal-delay),
+    backdrop-filter 0.8s ease var(--reveal-delay);
 }
 
 .modal-enter-active .modal-panel {
   transition:
-    opacity 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.9s,
-    transform 0.8s var(--ease-spring) 0.9s;
+    opacity 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) var(--reveal-delay),
+    transform 0.8s var(--ease-spring) var(--reveal-delay);
 }
 
 .modal-leave-active,

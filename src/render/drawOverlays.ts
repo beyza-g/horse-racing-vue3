@@ -41,15 +41,9 @@ export function drawCue(
   ctx.textAlign = 'center';
 
   if (cue.phase === 'ready') {
+    // The round title and Start action are a DOM card over the canvas
+    // (ReadyCard), so they are focusable and readable; the canvas only dims.
     scrim(0.9);
-    ctx.font = `800 ${Math.min(44, H * 0.1)}px ${FONT_SANS}`;
-    ctx.fontStretch = 'condensed';
-    ctx.fillStyle = P.text;
-    ctx.fillText(`ROUND ${round}`, cx, cy - 2);
-    ctx.fontStretch = 'normal';
-    ctx.font = `500 12px ${FONT_MONO}`;
-    ctx.fillStyle = P.muted;
-    ctx.fillText(`${cue.race.distance}M · PRESS START`, cx, cy + 26);
     return;
   }
 

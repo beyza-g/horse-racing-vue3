@@ -21,7 +21,9 @@ import {
   buildRounds,
   buildStable,
   buildStatus,
+  describeDiscardedProgress,
   isGeneratePrimary,
+  regenerateNeedsConfirmation,
   type RaceViewState,
 } from './raceView';
 
@@ -131,6 +133,33 @@ describe('buildPlaybackControl', () => {
   });
 });
 
+describe('regenerate confirmation', () => {
+  it.each<[DirectorPhase, boolean]>([
+    ['idle', false],
+    ['ready', false],
+    ['countdown', true],
+    ['running', true],
+    ['settling', true],
+    ['intermission', true],
+    ['complete', false],
+  ])('%s → asks first: %s', (phase, expected) => {
+    const s = phase === 'idle' ? idle : state({ phase });
+    expect(regenerateNeedsConfirmation(s)).toBe(expected);
+  });
+
+  it('describes exactly what would be lost', () => {
+    expect(describeDiscardedProgress(state({ phase: 'running' }))).toBe('Round 1 in progress');
+    expect(
+      describeDiscardedProgress(
+        state({ phase: 'running', roundIndex: 2, results: allResults.slice(0, 2) }),
+      ),
+    ).toBe('Round 3 in progress and 2 official results');
+    expect(
+      describeDiscardedProgress(state({ phase: 'intermission', results: allResults.slice(0, 1) })),
+    ).toBe('1 official result');
+  });
+});
+
 describe('buildBoard', () => {
   it('is empty before a program exists', () => {
     expect(buildBoard(idle)).toMatchObject({ roundIndex: -1, title: 'Results', rows: [] });
@@ -146,6 +175,7 @@ describe('buildBoard', () => {
       Array.from({ length: 10 }, (_, i) => i * BOARD_ROW_HEIGHT),
     );
     expect(board.rows.some((r) => r.podium)).toBe(false);
+    expect(board.rows.every((r) => r.medal === null)).toBe(true);
   });
 
   it('orders rows by live rank while racing', () => {
@@ -158,6 +188,19 @@ describe('buildBoard', () => {
     expect(leader?.horseId).toBe(liveOrder[0]!.horseId);
     expect(leader?.position).toBe('1st');
     expect(leader?.podium).toBe(true);
+    const byTop = [...board.rows].sort((a, b) => a.top - b.top);
+    expect(byTop.map((r) => r.medal)).toEqual([
+      'gold',
+      'silver',
+      'bronze',
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+    ]);
   });
 
   it('shows official times once the round is official', () => {
