@@ -6,14 +6,14 @@ The pure layers carry most of the weight because they decide outcomes and
 can be tested exhaustively with hand-written inputs: seeded generators and
 explicit frame deltas, never real timers or random numbers.
 
-| Suite         | Runs in                    | Tests | Covers                                                                                                                                                                                                                                                       |
-| ------------- | -------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Vitest `core` | Node                       | 407   | Domain rules, condition model, physics, standings (live and program), timeboard, playback clock, slow motion, phase machine, render geometry and particles                                                                                                   |
-| Vitest `ui`   | jsdom                      | 208   | Stores and view models, keyboard resolver, focus trap, outside-click rule, tabs, components (including the floating follow badge, track lane hover, standings and movement), a renderer smoke test, an `App` integration suite (including the results panel) |
-| Playwright    | Chromium, production build | 46    | Full user flows, dialogs, standings, track lane hover, responsive layout, zero layout shift (playback and following), reduced motion, visual baselines                                                                                                       |
+| Suite         | Runs in                    | Tests | Covers                                                                                                                                                                                                                                                                                 |
+| ------------- | -------------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vitest `core` | Node                       | 407   | Domain rules, condition model, physics, standings (live and program), timeboard, playback clock, slow motion, phase machine, render geometry and particles                                                                                                                             |
+| Vitest `ui`   | jsdom                      | 212   | Stores and view models, keyboard resolver, frame loop and race loop, focus trap, outside-click rule, tabs, components (including the floating follow badge, track lane hover, standings and movement), a renderer smoke test, an `App` integration suite (including the results panel) |
+| Playwright    | Chromium, production build | 46    | Full user flows, dialogs, standings, track lane hover, responsive layout, zero layout shift (playback and following), reduced motion, visual baselines                                                                                                                                 |
 
-Statement coverage is 97.5% overall: 100% in `domain`, 99.3% in `playback`,
-99.1% in `stores` and 96.6% in `render` (`npm run test:coverage`).
+Statement coverage is 97.9% overall: 100% in `domain`, 99.3% in `playback`,
+98.9% in `stores` and 96.6% in `render` (`npm run test:coverage`).
 
 Notable techniques:
 
@@ -197,6 +197,11 @@ automated test first.
     the console) and keeps running; `stop()` called from inside a frame is
     also honoured. `useAnimationFrame.spec.ts` drives it with a manual frame
     queue.
+20. **The race loop's frame callback had no direct test.** Its per-frame
+    rule (clear a hovered lane when the race disappears under a still
+    pointer) and the resize observer lifecycle only ran in the browser.
+    `useRaceLoop.spec.ts` drives them with manual frames and a fake
+    `ResizeObserver`; removing the rule fails it.
 
 ## Known limitations
 
