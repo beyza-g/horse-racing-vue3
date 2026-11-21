@@ -80,6 +80,8 @@ src/
     fixedStep.ts          # Accumulator that runs the engine at a fixed SIM_STEP
     finishDrama.ts        # Slow-motion curve around the winning moment
     motion.ts             # Stride phase, gallop amplitude, final-stretch drive (sprint) intensity
+    liveOrder.ts          # Live leaderboard rows (+Nm gaps, official times) and the 250 ms publish gate
+    raceFrame.ts          # One frame of the pipeline: drama -> accumulator -> race.tick -> motion
     raceDirector.ts       # Phase machine: idle → ready → countdown → running →
                           # settling → intermission → … → complete; emits events
   render/                 # Canvas drawing (DOM types allowed, no Vue)
@@ -232,9 +234,7 @@ npm run test:e2e       # Playwright (added in M6)
 
 - [x] M1 — Project setup: Vite/Vue/TS/Pinia/Vitest/ESLint/Prettier, fonts, tokens, guards, CLAUDE.md
 - [x] M2 — Domain engine (`src/domain`) + exhaustive Vitest specs
-- [ ] M3 — Playback controller + motion (`src/playback`) + Vitest specs (clamp, speed, pause, drift, phases, reset, stride/drive)
-  - [x] `clock.ts`, `fixedStep.ts`, `finishDrama.ts` (pause-safe slow motion) + specs
-  - [ ] `motion.ts`, `raceDirector.ts` + specs
+- [x] M3 — Playback controller + motion (`src/playback`) + Vitest specs (clamp, speed, pause, drift, phases, reset, stride/drive)
 - [ ] M4 — Canvas renderer (`src/render`) + geometry specs
 - [ ] M5 — Pinia stores + Vue components + responsive layout + keyboard shortcuts + modal focus lock (+ store/component specs)
 - [ ] M6 — Polish (transitions, a11y, zero-layout-shift audit) + Playwright E2E/visual (bonus)
