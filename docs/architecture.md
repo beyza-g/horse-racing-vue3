@@ -143,9 +143,12 @@ renderer reads the director directly), the hovered track lane (local to the
 track's loop composable), the Roster/Standings tab (local to the panel), the
 completion dialog's reveal and focus-return flags (local to the dialog),
 and every derived display. Derived displays come from **pure view-model
-builders** in `stores/raceView.ts` (status line, board rows, program cards,
-stable rows, standings and movement, condition badges, medals, and whether
-regenerating needs confirmation), tested without Vue or Pinia.
+builders** (status line, board rows, program cards, stable rows, standings
+and movement, condition badges, medals, and whether regenerating needs
+confirmation), tested without Vue or Pinia. They live in one module per
+screen area under `stores/views/` (`header`, `results`, `horseRows`,
+`standings`, plus `shared` for the store snapshot type and small helpers);
+`stores/raceView.ts` re-exports them, so callers have one import path.
 
 **Reactivity granularity.** The view models share one computed input, except
 the live order, which only the board reads. Keeping it out of the shared

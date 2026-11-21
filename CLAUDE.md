@@ -126,7 +126,8 @@ src/
   stores/
     race.ts               # Facade over the (markRaw) director: horses, program, results,
                           # phase, throttled live order, inspect/expand state, view getters
-    raceView.ts           # Pure view-model builders (status, board, rounds, stable, ...)
+    raceView.ts           # Public entry for the pure view-model builders (re-exports views/*)
+    views/                # One module per screen area: header, results, horseRows, standings, + shared
     preferences.ts        # Theme (persisted, storage failures ignored), speed, focus, follow
   composables/
     useAnimationFrame.ts  # rAF loop yielding raw wall dt; a throwing frame is reported, never kills the loop
