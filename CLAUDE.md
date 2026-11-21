@@ -162,6 +162,16 @@ globals are disabled. Use the `@/` alias outside the pure layers; inside
   functions in `src/playback`, so the renderer only maps numbers to pixels.
 - Per-frame positions never enter reactive state. The store receives the live
   order at most every 250 ms (or immediately when a runner finishes).
+- **One time source.** Every time-based effect (finish slow motion, winner
+  card fade-in, name-tag fade-out, countdown, intermission) advances on the
+  playback clock's `presentationDt`, which is 0 while paused and clamped on
+  long frames. Never time an effect against wall-clock timestamps
+  (`performance.now()` minus a start time): wall time keeps running during a
+  pause or hidden tab, so the effect expires and is skipped on resume.
+- Frame pipeline order: `clock.advance(wallDt)` → `drama.step(presentationDt,
+observeFinish(race))` → `accumulator.push(presentationDt × speed × factor)` →
+  `race.tick(ticks)`. The drama observes the race as it was at the start of
+  the frame.
 
 ## Edge cases that must be covered (tests + implementation)
 
@@ -205,6 +215,7 @@ globals are disabled. Use the `@/` alias outside the pure layers; inside
 ## Commands
 
 ```bash
+nvm use               # Node 22.22+ (see .nvmrc; jsdom and Vitest need it)
 npm run dev            # Vite dev server
 npm run build          # vue-tsc --build + vite build
 npm run verify         # lint + format:check + typecheck + check:english + test (milestone gate)
@@ -222,6 +233,8 @@ npm run test:e2e       # Playwright (added in M6)
 - [x] M1 — Project setup: Vite/Vue/TS/Pinia/Vitest/ESLint/Prettier, fonts, tokens, guards, CLAUDE.md
 - [x] M2 — Domain engine (`src/domain`) + exhaustive Vitest specs
 - [ ] M3 — Playback controller + motion (`src/playback`) + Vitest specs (clamp, speed, pause, drift, phases, reset, stride/drive)
+  - [x] `clock.ts`, `fixedStep.ts`, `finishDrama.ts` (pause-safe slow motion) + specs
+  - [ ] `motion.ts`, `raceDirector.ts` + specs
 - [ ] M4 — Canvas renderer (`src/render`) + geometry specs
 - [ ] M5 — Pinia stores + Vue components + responsive layout + keyboard shortcuts + modal focus lock (+ store/component specs)
 - [ ] M6 — Polish (transitions, a11y, zero-layout-shift audit) + Playwright E2E/visual (bonus)
