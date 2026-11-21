@@ -15,7 +15,7 @@ export default mergeConfig(
       coverage: {
         provider: 'v8',
         include: ['src/**/*.{ts,vue}'],
-        exclude: ['src/**/*.spec.ts', 'src/main.ts', 'src/**/*.d.ts'],
+        exclude: ['src/**/*.spec.ts', 'src/**/__fixtures__/**', 'src/main.ts', 'src/**/*.d.ts'],
       },
       projects: [
         {

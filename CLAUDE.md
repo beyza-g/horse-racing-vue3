@@ -62,16 +62,19 @@ Visual source of truth: the "Horse Racing" page of the Claude Design project
 
 ```
 src/
-  domain/                 # Pure rules engine (no Vue/DOM)
+  domain/                 # Pure rules engine (no Vue/DOM). Public API: src/domain/index.ts
     constants.ts          # HORSE_COUNT=20, RUNNERS_PER_ROUND=10, ROUND_DISTANCES, CONDITION_MIN/MAX
-    types.ts              # Horse, Program, Round, RaceState, Runner, FinishRecord, RoundResult
-    random.ts             # createRng(seed) (mulberry32), shuffle, sample, randomInt
-    horses.ts             # generateHorses(rng) — 20 unique names, unique colours, condition 1–100
-    program.ts            # generateProgram(horses, rng) — 6 rounds × 10 distinct runners
+    errors.ts             # DomainError (typed `code`), invariant, assertIntegerInRange
+    types.ts              # Horse, Round, Program, FinishRecord, RoundResult (all readonly)
+    random.ts             # createRng(seed) (mulberry32), forkRng, randomInt, shuffle, sample
+    data/horseNames.ts    # 28-name pool, coat colours
+    horses.ts             # createHorse (validating factory), generateHorses, silkColor, roster checks
+    program.ts            # createRound (validating factory), generateProgram (6 rounds x 10 + raceSeed)
     race/
-      createRace.ts       # Runner setup from a round line-up
-      stepRace.ts         # Fixed-step physics: pace, fatigue, noise, finish interpolation
-      standings.ts        # Live order + gap labels, official ranking, tie-breaking
+      physics.ts          # SIM_STEP, PHYSICS tuning table, pace/profile strategies, pure calculators
+      standings.ts        # compareLive, compareCrossings, in-place insertion sort, gapToLeader
+      createRace.ts       # createRace(round, roster, options) -> Race (fixed-step simulation)
+    __fixtures__/         # Test-only builders (excluded from coverage and never imported by app code)
   playback/               # Pure timing controller (no Vue/DOM)
     clock.ts              # Wall dt → sim dt: clamp (tab switch), speed scale, pause
     fixedStep.ts          # Accumulator that runs the engine at a fixed SIM_STEP
@@ -125,6 +128,23 @@ globals are disabled. Use the `@/` alias outside the pure layers; inside
 - Live order during a round; official finish times (sim seconds, 2 decimals)
   once every runner has crossed. Ties broken by interpolated crossing time,
   then by horse ID for stability.
+
+## Domain engine contract
+
+- Outer layers import from `@/domain` (the barrel) only.
+- Every entity is built by a validating factory (`createHorse`, `createRound`,
+  `createRace`) and returned frozen. Invalid input throws `DomainError` with a
+  typed `code`; the domain never returns `NaN` or a partially valid entity.
+- Each `Round` carries a `raceSeed`, so the program alone determines every
+  race outcome. Separate concerns use separate generators (`forkRng`).
+- `Race` advances only in whole `SIM_STEP` ticks (`tick(count)`); `elapsed`
+  is `ticks * SIM_STEP`, so there is no floating-point drift. After the last
+  runner finishes, ticks only animate the pull-up; the result is frozen.
+- Runner state lives behind ES private fields; callers get `RunnerView`
+  (read-only) objects. `standingsVersion` increments only when the live order
+  or a placing changes, so consumers can skip redundant updates.
+- Hot loop: no per-tick allocation (reused crossing buffer, primitive-argument
+  strategies, in-place insertion sort, sorting skipped once settled).
 
 ## Playback model
 
@@ -200,7 +220,7 @@ npm run test:e2e       # Playwright (added in M6)
 ## Roadmap
 
 - [x] M1 — Project setup: Vite/Vue/TS/Pinia/Vitest/ESLint/Prettier, fonts, tokens, guards, CLAUDE.md
-- [ ] M2 — Domain engine (`src/domain`) + exhaustive Vitest specs
+- [x] M2 — Domain engine (`src/domain`) + exhaustive Vitest specs
 - [ ] M3 — Playback controller + motion (`src/playback`) + Vitest specs (clamp, speed, pause, drift, phases, reset, stride/drive)
 - [ ] M4 — Canvas renderer (`src/render`) + geometry specs
 - [ ] M5 — Pinia stores + Vue components + responsive layout + keyboard shortcuts + modal focus lock (+ store/component specs)

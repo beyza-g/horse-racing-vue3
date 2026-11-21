@@ -1,0 +1,42 @@
+/** Name pool for the stable. Must contain at least HORSE_COUNT unique names. */
+export const HORSE_NAME_POOL: readonly string[] = Object.freeze([
+  'Iron Halo',
+  'Copper Vale',
+  'Night Ledger',
+  'Saltmarsh',
+  'Quiet Riot',
+  'Meridian',
+  'Ember Run',
+  'Northwind',
+  'Velvet Fuse',
+  'Paper Moon',
+  'Lantern Jack',
+  'Cold Harbor',
+  'Silver Mile',
+  'Tin Soldier',
+  'Redwing',
+  'Hollow Oak',
+  'Glass Comet',
+  'Wildcard',
+  'Low Tide',
+  'Starling',
+  'Brass Echo',
+  'Second Wind',
+  'Foxglove',
+  'Marble Arch',
+  'Dusk Patrol',
+  'High Noon',
+  'Juniper',
+  'Slate Grey',
+]);
+
+/** Coat shades for the drawn horse body (cosmetic; silks carry the unique colour). */
+export const COAT_COLORS: readonly string[] = Object.freeze([
+  '#3b2418',
+  '#5a2f17',
+  '#1c1613',
+  '#77716a',
+  '#2b1c15',
+  '#4a2a1a',
+  '#62381c',
+]);
