@@ -4,7 +4,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, relative } from 'node:path';
 
 const ROOT = process.cwd();
-const SCAN_DIRS = ['src', 'tests', 'scripts', 'public'];
+const SCAN_DIRS = ['src', 'tests', 'scripts', 'public', 'docs'];
 const ROOT_FILES = ['index.html', 'CLAUDE.md', 'README.md', 'package.json'];
 const EXTENSIONS = new Set(['.ts', '.vue', '.js', '.mjs', '.json', '.css', '.html', '.md']);
 // Built from code points so this file itself stays ASCII-only.

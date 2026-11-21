@@ -25,6 +25,20 @@ for (const viewport of VIEWPORTS) {
   });
 }
 
+for (const viewport of VIEWPORTS) {
+  test(`horse names are never truncated at ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await openApp(page);
+    await header(page).getByRole('button', { name: 'Generate Program' }).click();
+    const truncated = await page
+      .locator('.stable-table__name, .round-card__name')
+      .evaluateAll((elements) =>
+        elements.filter((el) => el.scrollWidth > el.clientWidth).map((el) => el.textContent),
+      );
+    expect(truncated).toEqual([]);
+  });
+}
+
 test('desktop uses the three-column grid', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openApp(page);

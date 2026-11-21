@@ -1,14 +1,17 @@
 # CLAUDE.md — Horse Racing (Vue 3)
 
 Interactive six-round horse racing simulation built with Vue 3, Pinia and a
-pure, deterministic TypeScript race engine. The UX contract and design tokens
-below are the visual source of truth.
+pure, deterministic TypeScript race engine. This file holds the working rules
+for anyone (human or agent) changing the code. Reviewer-facing documentation
+lives in `README.md` and `docs/` (see [Documentation](#documentation)); the UX
+contract and design tokens below are the visual source of truth.
 
 ## Non-negotiable rules
 
 1. **English only.** All code, identifiers, types, UI copy, comments, test names,
    commit messages and docs are in English. No Turkish or other non-English words.
-   Enforced by `npm run check:english` (part of `verify`).
+   Enforced by `npm run check:english` (part of `verify`), which scans `src`,
+   `tests`, `scripts`, `public`, `docs`, `README.md` and `CLAUDE.md`.
 2. **Layered architecture.** Dependencies point inward only:
    `components → composables/stores → render → playback → domain`.
    - `src/domain/**` and `src/playback/**` must not import Vue, Pinia, or touch
@@ -23,11 +26,12 @@ below are the visual source of truth.
 3. **Determinism.** Same seed ⇒ same horses, program, finish order and official
    times, regardless of frame rate, playback speed, pauses or tab switches.
    This is guaranteed by a fixed simulation timestep (see Playback).
-4. **Every domain or playback change ships with Vitest coverage.** Tests use
-   deterministic inputs only: seeded `Rng`, explicit `dt` sequences, fake
+4. **Every domain or playback change ships with Vitest coverage.** Unit tests
+   use deterministic inputs only: seeded `Rng`, explicit `dt` sequences, fake
    clocks. No real timers, no `Math.random`, no wall-clock reads in specs.
-5. **Design fidelity.** Match the design's tokens, spacing, typography and
-   behaviour. Zero layout shift: fixed row heights, `min-width` on stateful
+   (Playwright tests run in real time but always with `?seed=42`.)
+5. **Design fidelity.** Follow the tokens in `src/styles/tokens.css` and the
+   UX contract below for spacing, typography and behaviour. Zero layout shift: fixed row heights, `min-width` on stateful
    buttons, tabular mono digits, absolutely positioned leaderboard rows.
 6. **Strict TypeScript.** `strict`, `noUncheckedIndexedAccess`,
    `exactOptionalPropertyTypes`, `noImplicitOverride`, `noImplicitReturns`,
@@ -38,12 +42,16 @@ below are the visual source of truth.
      disable comments without a `-- reason` fail lint.
    - Prefer `unknown` + narrowing, discriminated unions for phases/status, and
      `readonly` data in the domain. Non-null assertions are allowed only in specs.
-7. **Milestone verification gate.** A milestone is not done until
+7. **Verification gate.** A milestone is not done until
    `npm run verify` passes (ESLint with `--max-warnings 0`, Prettier check,
    `vue-tsc --build`, English check, Vitest) and `npm run build` succeeds.
    UI changes also run `npm run test:e2e`; visual baselines are only updated
    deliberately, after reviewing the diff.
    Then make an atomic commit and stop for review.
+8. **Docs stay current.** A change to rules, architecture, UX behaviour or the
+   test suite updates the matching file in `docs/` (and this file) in the
+   same commit. Numbers quoted in docs (test counts, coverage, outcome
+   statistics) are re-measured, not guessed.
 
 ## Stack
 
@@ -57,12 +65,19 @@ below are the visual source of truth.
 | Track        | Canvas 2D (HiDPI, ResizeObserver)                                               | Matches design; 10 animated horses + particles at 60 fps without DOM churn                 |
 | Fonts        | Archivo (variable, `wdth` axis) + JetBrains Mono, self-hosted via `@fontsource` | No CDN dependency, no FOUT layout shift                                                    |
 | Unit tests   | Vitest (+ `@vue/test-utils`, jsdom for components)                              | Required bonus                                                                             |
-| E2E / visual | Playwright (seeded via `?seed=`)                                                | Bonus 2 & 3                                                                                |
+| E2E / visual | Playwright 1.65 against the production build (seeded via `?seed=`)              | Bonus 2 & 3                                                                                |
 | Lint/format  | ESLint flat config (vue + typescript-eslint) + Prettier                         | Consistency                                                                                |
 
 ## Directory layout
 
 ```
+README.md                 # Reviewer entry point: quick start, brief mapping, docs map
+docs/
+  domain.md               # Race rules, condition and race-time research, simplifications
+  architecture.md         # Layers, determinism, time domains, director, state, rendering
+  ux.md                   # Layout, interactions, accessibility, theme, zero layout shift
+  quality.md              # Test strategy, edge-case matrix, bugs caught, limitations
+  images/                 # Screenshots used by the docs (seed 42)
 src/
   domain/                 # Pure rules engine (no Vue/DOM). Public API: src/domain/index.ts
     constants.ts          # HORSE_COUNT=20, RUNNERS_PER_ROUND=10, ROUND_DISTANCES, CONDITION_MIN/MAX
@@ -129,6 +144,8 @@ tests/e2e/   Playwright against the production build, always with ?seed=42
   visual.spec.ts   # Screenshot baselines (canvas masked in layout shots; track compared separately)
   __screenshots__/ # Baselines, suffixed by platform (regenerate with npm run test:e2e:update)
 scripts/     check-english.mjs
+.nvmrc               Node 22
+playwright.config.ts builds, serves on :4173, Chromium project
 tsconfig.base.json   shared strict options
 tsconfig.core.json   domain + playback, no DOM lib
 tsconfig.app.json    all of src with DOM lib
@@ -147,6 +164,15 @@ globals are disabled. Use the `@/` alias outside the pure layers; inside
 
 - Exactly 20 horses, IDs 1–20, unique names (from a 28-name pool), unique colours
   (20 distinct hues), condition an integer in [1, 100].
+- A program has 6 rounds, in order: 1200, 1400, 1600, 1800, 2000, 2200 m.
+- Each round draws 10 distinct random horses from the 20; lane = draw order.
+- Rounds run strictly one at a time; results appear as each round becomes official.
+- Live order during a round; official finish times once every runner has
+  crossed. Results store simulation seconds; users see them as timeboard
+  times (`m:ss.cc`, about 1:00 per 1000 m). Ties broken by interpolated
+  crossing time, then by horse ID for stability.
+- Deliberate simplifications (straight track, one surface, no tactics or
+  weights, condition fixed per session) are listed in `docs/domain.md`.
 
 ## Condition model (researched; see `src/domain/condition.ts`)
 
@@ -170,13 +196,7 @@ globals are disabled. Use the `@/` alias outside the pure layers; inside
   arithmetic on the seeded `Rng` so seeds replay identically.
 - Expected outcomes (300 seeded programs): ~5 distinct winners per 6-round
   program; race-fit horses win ~1.7× their share, overweight horses rarely.
-- A program has 6 rounds, in order: 1200, 1400, 1600, 1800, 2000, 2200 m.
-- Each round draws 10 distinct random horses from the 20; lane = draw order.
-- Rounds run strictly one at a time; results appear as each round becomes official.
-- Live order during a round; official finish times once every runner has
-  crossed. Results store simulation seconds; users see them as timeboard
-  times (`m:ss.cc`, about 1:00 per 1000 m). Ties broken by interpolated
-  crossing time, then by horse ID for stability.
+- Research sources and the full rationale are in `docs/domain.md`.
 
 ## Domain engine contract
 
@@ -198,11 +218,11 @@ globals are disabled. Use the `@/` alias outside the pure layers; inside
 ## Playback model
 
 - Wall `dt` from rAF is clamped to `MAX_FRAME_DT = 0.05 s` (tab switches,
-  debugger pauses), then multiplied by `speed ∈ {1, 2, 4}`, pace and the finish
+  debugger pauses), then multiplied by `speed ∈ {1, 2, 4}` and the finish
   slow-motion factor. Paused ⇒ sim dt is 0.
 - Sim dt feeds an accumulator that advances the engine in `SIM_STEP` increments,
   so race outcomes never depend on frame timing or speed.
-- Phase durations (design values): countdown 2.4 s, post-finish settle 1.2 s,
+- Phase durations: countdown 2.4 s, post-finish settle 1.2 s,
   intermission 2.6 s (intermission speed capped at 2x).
 - Regenerating the program at any phase resets the director synchronously;
   no timers (`setTimeout`) are used for game flow, so nothing stale can fire.
@@ -233,10 +253,16 @@ globals are disabled. Use the `@/` alias outside the pure layers; inside
   long frames. Never time an effect against wall-clock timestamps
   (`performance.now()` minus a start time): wall time keeps running during a
   pause or hidden tab, so the effect expires and is skipped on resume.
-- Frame pipeline order: `clock.advance(wallDt)` → `drama.step(presentationDt,
-observeFinish(race))` → `accumulator.push(presentationDt × speed × factor)` →
-  `race.tick(ticks)`. The drama observes the race as it was at the start of
-  the frame.
+- Frame pipeline order (`runRaceFrame`), where the drama observes the race as
+  it was at the start of the frame:
+
+  ```
+  clock.advance(wallDt)
+    → drama.step(presentationDt, observeFinish(race))
+    → accumulator.push(presentationDt × speed × factor)
+    → race.tick(ticks)
+    → motion.advance(race, simDt, presentationDt)
+  ```
 
 ## Edge cases that must be covered (tests + implementation)
 
@@ -246,7 +272,7 @@ observeFinish(race))` → `accumulator.push(presentationDt × speed × factor)` 
 | Tab switch / long frame | Wall `dt` clamped to 0.05 s; negative or `NaN` dt treated as 0; no jump in race state                                                                                                                                                  |
 | Rapid toggles           | Any interleaving of pause/resume/speed changes yields sim time = Σ(clamped dt × speed while unpaused); identical results to an untouched run with the same seed                                                                        |
 | Pause in every phase    | Countdown, running, settling and intermission all freeze; resume continues exactly where it stopped                                                                                                                                    |
-| Mid-race regeneration   | Clears results, live order, inspect/view and follow targets that no longer apply; director resets to `ready` for round 1; no stale events                                                                                              |
+| Mid-race regeneration   | Clears results, live order and inspect/view (the followed horse is kept: the roster never changes within a session); director resets to `ready` for round 1; no stale events                                                           |
 | Completion              | Status `complete`; Start hidden; Generate is the single primary "new program" path; Space or Start cannot restart a finished program                                                                                                   |
 | Completion modal        | Blocks interaction (`aria-modal`, focus trap, initial focus on primary action, background `inert`); Enter = new program, Esc = view track; focus returns on close                                                                      |
 | Keyboard shortcuts      | Ignored while typing in inputs; Space ignored when a button has focus (native activation instead); modal shortcuts take precedence                                                                                                     |
@@ -274,7 +300,7 @@ observeFinish(race))` → `accumulator.push(presentationDt × speed × factor)` 
   `chore: scaffold Vue 3 + TypeScript + Pinia + Vitest toolchain`.
 - Never commit with a failing `npm run verify`.
 
-## UX contract (from the design)
+## UX contract
 
 - Header: title, 6-segment round progress, status dot + pill, "Following" chip,
   theme toggle, Focus, Generate Program, 1x/2x/4x segmented control,
@@ -307,7 +333,22 @@ npm run format         # Prettier write
 npm run check:english  # English-only guard
 npm run test:e2e       # Playwright E2E + visual (builds and serves on :4173)
 npm run test:e2e:update  # Refresh visual baselines after an intended UI change
+npx playwright install chromium  # One-time browser download for E2E
 ```
+
+## Documentation
+
+| File                   | Audience and scope                                                          |
+| ---------------------- | --------------------------------------------------------------------------- |
+| `README.md`            | Reviewers: what it is, quick start, requirement mapping, links              |
+| `docs/domain.md`       | Rules, researched condition and time models (with sources), simplifications |
+| `docs/architecture.md` | Layers and enforcement, determinism, time domains, director, state          |
+| `docs/ux.md`           | Layout, interactions, keyboard, accessibility, zero layout shift            |
+| `docs/quality.md`      | Test suites and counts, coverage, edge-case matrix, bugs caught             |
+| `CLAUDE.md`            | Working rules and conventions (this file)                                   |
+
+Screenshots in `docs/images/` are captured from the production build with
+`?seed=42`; refresh them when the UI changes visibly.
 
 ## Roadmap
 
