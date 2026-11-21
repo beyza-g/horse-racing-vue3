@@ -94,6 +94,9 @@ export function horseScale(g: TrackGeometry): number {
   return Math.min(g.laneHeight / TRACK_LAYOUT.horseLaneHeight, TRACK_LAYOUT.maxHorseScale);
 }
 
+/** Approximate half-width of a pole label such as "1800" at 10px mono. */
+export const POLE_LABEL_HALF_WIDTH = 12;
+
 export interface DistanceMarker {
   /** Metres still to run at this pole. */
   readonly metresToGo: number;
@@ -102,15 +105,29 @@ export interface DistanceMarker {
   readonly labeled: boolean;
 }
 
+/** Horizontal band of the header taken by text: [0, left] and [right, width]. */
+export interface HeaderReservation {
+  /** X where the left-hand header text ends (title, distance, PAUSED pill). */
+  readonly left: number;
+  /** X where the right-hand race clock starts. */
+  readonly right: number;
+}
+
+/** Whether a label centred at `x` with half-width `halfWidth` fits between the reserved areas. */
+export function labelFits(x: number, halfWidth: number, reserved: HeaderReservation): boolean {
+  const gap = TRACK_LAYOUT.labelClearance;
+  return x > reserved.left + gap && x + halfWidth < reserved.right - gap / 2;
+}
+
 /**
  * Furlong poles, measured back from the finish. Labels are thinned when the
  * poles are close together and suppressed where they would collide with the
- * header text ending at `reservedUntilX` (for example the PAUSED pill).
+ * header text (the PAUSED pill on the left, the race clock on the right).
  */
 export function distanceMarkers(
   g: TrackGeometry,
   distance: number,
-  reservedUntilX = 0,
+  reserved: HeaderReservation = { left: 0, right: Number.POSITIVE_INFINITY },
 ): readonly DistanceMarker[] {
   const L = TRACK_LAYOUT;
   if (!(distance > 0)) return [];
@@ -122,7 +139,7 @@ export function distanceMarkers(
     markers.push({
       metresToGo: metres,
       x,
-      labeled: metres % labelStep === 0 && x > reservedUntilX + L.labelClearance,
+      labeled: metres % labelStep === 0 && labelFits(x, POLE_LABEL_HALF_WIDTH, reserved),
     });
   }
   return markers;

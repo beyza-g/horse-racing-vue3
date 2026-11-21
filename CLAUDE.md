@@ -95,21 +95,28 @@ src/
     renderer.ts           # createTrackRenderer(canvas): resize, render(scene), horseAt(y)
   test/                   # Vitest setup (jsdom) and the recording fake 2D context
   stores/
-    race.ts               # Horses, program, results, status, live order, inspect/view
-    preferences.ts        # Theme (persisted), speed, focus mode, followed horse
+    race.ts               # Facade over the (markRaw) director: horses, program, results,
+                          # phase, throttled live order, inspect/expand state, view getters
+    raceView.ts           # Pure view-model builders (status, board, rounds, stable, ...)
+    preferences.ts        # Theme (persisted, storage failures ignored), speed, focus, follow
   composables/
-    useAnimationFrame.ts  # rAF loop yielding wall dt
-    useRaceLoop.ts        # Wires director ↔ store ↔ renderer (throttled live updates)
-    useKeyboardShortcuts.ts  useBreakpoint.ts  useTheme.ts
+    useAnimationFrame.ts  # rAF loop yielding raw wall dt
+    useRaceLoop.ts        # Per frame: race.advance(dt) then renderer.render(scene); resize; hit test
+    shortcuts.ts          # Pure resolveShortcut(key, context) -> action (unit-tested)
+    useKeyboardShortcuts.ts  # Window listener that dispatches resolved actions
+    useFocusTrap.ts       # Dialog focus trap, background `inert`, focus restore
+    useTheme.ts           # Mirrors the theme onto <html data-theme>
   components/
-    header/   AppHeader, RoundProgress, StatusIndicator, FollowChip, ThemeToggle,
-              SpeedSelector, PlaybackButton
-    track/    RaceTrack (canvas host), EmptyProgramCard
-    results/  ResultsPanel, Leaderboard, CompletedRounds
-    program/  ProgramPanel, RoundCard
-    stable/   StablePanel
-    dialogs/  ProgramCompleteDialog
-    ui/       StatusPill, HorseBadge, AppButton, icons/*
+    layout/   DashboardLayout (named slots + responsive grid; structure only)
+    header/   AppHeader (container), RoundProgress, StatusIndicator, FollowChip,
+              ThemeToggle, SpeedSelector, PlaybackButton
+    track/    RaceTrack (container, canvas host), EmptyProgramCard
+    results/  ResultsPanel (container), ResultsLeaderboard, CompletedRounds
+    program/  ProgramPanel (container), RoundCard
+    stable/   StablePanel (container), StableTable
+    dialogs/  ProgramCompleteDialog (container)
+    ui/       AppButton, StatusPill, HorseBadge, ColorTick, PanelCard (wrapper),
+              ModalDialog (wrapper: teleport, aria-modal, focus trap), icons/*
   styles/     tokens.css (light/dark), base.css
   App.vue  main.ts
 tests/e2e/   Playwright specs (+ visual snapshots)
@@ -198,6 +205,19 @@ observeFinish(race))` → `accumulator.push(presentationDt × speed × factor)` 
 | Responsive              | Desktop/tablet/mobile grids with no horizontal overflow at 320 px; no layout shift when status, pills, times or labels change                                     |
 | Storage                 | `localStorage` unavailable or throwing ⇒ theme falls back to dark silently                                                                                        |
 
+## Component conventions
+
+- **Containers** (`AppHeader`, `RaceTrack`, `ResultsPanel`, `ProgramPanel`,
+  `StablePanel`, `ProgramCompleteDialog`) read stores and wire events.
+  **Presentational** components take typed props (view models from
+  `stores/raceView.ts`) and emit events; they never import stores.
+  **Wrappers** (`PanelCard`, `ModalDialog`, `DashboardLayout`) provide chrome,
+  behaviour or structure through slots.
+- Every clickable row is a native `<button>`; toggles expose `aria-pressed`,
+  disclosures `aria-expanded`, the status line is `aria-live="polite"`.
+- Theme-dependent values belong in tokens (e.g. `--dim-opacity`). Do not use
+  `:global(...) .x` in scoped styles: Vue compiles it to the global part only.
+
 ## Git workflow
 
 - Branch: `main`. One atomic commit per milestone (more if a milestone splits
@@ -219,6 +239,8 @@ observeFinish(race))` → `accumulator.push(presentationDt × speed × factor)` 
   Esc clears follow, then focus.
 - Keyboard: Space start/pause, F focus, T theme, 1/2/4 speed, Esc, Enter in modal.
 - Breakpoints: desktop ≥ 1180 px (3-column grid), tablet ≥ 760 px, mobile below.
+  Implemented with CSS media queries only (no JS breakpoint composable); the
+  canvas switches to its compact layout below 560 px of its own width.
 - Theme persisted in `localStorage` (guarded with try/catch).
 
 ## Commands
@@ -243,5 +265,5 @@ npm run test:e2e       # Playwright (added in M6)
 - [x] M2 — Domain engine (`src/domain`) + exhaustive Vitest specs
 - [x] M3 — Playback controller + motion (`src/playback`) + Vitest specs (clamp, speed, pause, drift, phases, reset, stride/drive)
 - [x] M4 — Canvas renderer (`src/render`) + geometry specs
-- [ ] M5 — Pinia stores + Vue components + responsive layout + keyboard shortcuts + modal focus lock (+ store/component specs)
+- [x] M5 — Pinia stores + Vue components + responsive layout + keyboard shortcuts + modal focus lock (+ store/component specs)
 - [ ] M6 — Polish (transitions, a11y, zero-layout-shift audit) + Playwright E2E/visual (bonus)

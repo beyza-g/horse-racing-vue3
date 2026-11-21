@@ -120,7 +120,7 @@ export function createTrackRenderer(canvas: HTMLCanvasElement): TrackRenderer {
 
       const observation = race === null ? null : observeFinish(race);
       const running = director.phase === 'running' || director.phase === 'settling';
-      const reservedUntil = drawHeader(
+      const reserved = drawHeader(
         ctx,
         g,
         P,
@@ -145,7 +145,7 @@ export function createTrackRenderer(canvas: HTMLCanvasElement): TrackRenderer {
         },
         light,
       );
-      drawDistancePoles(ctx, g, P, race?.distance ?? 1200, reservedUntil);
+      drawDistancePoles(ctx, g, P, race?.distance ?? 1200, reserved);
       const sinceWin = director.sinceWin;
       drawStartAndFinish(
         ctx,
@@ -153,6 +153,7 @@ export function createTrackRenderer(canvas: HTMLCanvasElement): TrackRenderer {
         P,
         race !== null && race.elapsed > 0 ? (observation?.leaderProgress ?? 0) : null,
         sinceWin === null ? 0 : Math.max(0, 1 - sinceWin * 1.2),
+        reserved,
       );
 
       if (race !== null) {

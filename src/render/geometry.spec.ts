@@ -3,6 +3,7 @@ import {
   computeGeometry,
   distanceMarkers,
   horseScale,
+  labelFits,
   laneAtY,
   laneTop,
   noseX,
@@ -75,6 +76,15 @@ describe('horseScale', () => {
   });
 });
 
+describe('labelFits', () => {
+  const reserved = { left: 100, right: 500 };
+  it('requires clearance from both reserved areas', () => {
+    expect(labelFits(300, 12, reserved)).toBe(true);
+    expect(labelFits(110, 12, reserved)).toBe(false);
+    expect(labelFits(495, 12, reserved)).toBe(false);
+  });
+});
+
 describe('distanceMarkers', () => {
   it('places a pole every 200 m measured back from the finish', () => {
     const markers = distanceMarkers(wide, 1200);
@@ -89,12 +99,18 @@ describe('distanceMarkers', () => {
     expect(cramped.filter((m) => m.labeled).every((m) => m.metresToGo % 400 === 0)).toBe(true);
   });
 
-  it('hides labels that would overlap the reserved header area (PAUSED pill)', () => {
-    const reserved = wide.startX + wide.run / 2;
-    for (const marker of distanceMarkers(wide, 1200, reserved)) {
-      if (marker.x <= reserved + TRACK_LAYOUT.labelClearance) expect(marker.labeled).toBe(false);
-      else expect(marker.labeled).toBe(true);
+  it('hides labels that would overlap the PAUSED pill on the left', () => {
+    const left = wide.startX + wide.run / 2;
+    for (const marker of distanceMarkers(wide, 1200, { left, right: Infinity })) {
+      expect(marker.labeled).toBe(marker.x > left + TRACK_LAYOUT.labelClearance);
     }
+  });
+
+  it('hides labels that would overlap the race clock on the right', () => {
+    const right = wide.finishX - wide.run / 6 + 5;
+    const markers = distanceMarkers(wide, 1200, { left: 0, right });
+    expect(markers.find((m) => m.metresToGo === 200)!.labeled).toBe(false);
+    expect(markers.find((m) => m.metresToGo === 400)!.labeled).toBe(true);
   });
 
   it('returns nothing for a non-positive distance', () => {

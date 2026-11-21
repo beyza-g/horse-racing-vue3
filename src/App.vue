@@ -1,51 +1,60 @@
 <script setup lang="ts">
-// M1 shell: proves the toolchain, fonts and tokens. Replaced by the real layout in M5.
+import ProgramCompleteDialog from '@/components/dialogs/ProgramCompleteDialog.vue';
+import AppHeader from '@/components/header/AppHeader.vue';
+import DashboardLayout from '@/components/layout/DashboardLayout.vue';
+import ProgramPanel from '@/components/program/ProgramPanel.vue';
+import ResultsPanel from '@/components/results/ResultsPanel.vue';
+import StablePanel from '@/components/stable/StablePanel.vue';
+import RaceTrack from '@/components/track/RaceTrack.vue';
+import type { ShortcutAction } from '@/composables/shortcuts';
+import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts';
+import { useTheme } from '@/composables/useTheme';
+import { usePreferencesStore } from '@/stores/preferences';
+import { useRaceStore } from '@/stores/race';
+
+const race = useRaceStore();
+const preferences = usePreferencesStore();
+
+useTheme(() => preferences.theme);
+
+function dispatch(action: ShortcutAction): void {
+  switch (action.type) {
+    case 'togglePlayback':
+      race.togglePlayback();
+      break;
+    case 'toggleFocus':
+      preferences.toggleFocus();
+      break;
+    case 'toggleTheme':
+      preferences.toggleTheme();
+      break;
+    case 'setSpeed':
+      preferences.setSpeed(action.speed);
+      break;
+    case 'escape':
+      preferences.escape();
+      break;
+    case 'confirmDialog':
+      race.generateProgram();
+      break;
+    case 'dismissDialog':
+      race.dismissCompletion();
+      break;
+    case 'block':
+      break;
+  }
+}
+
+useKeyboardShortcuts(() => ({ dialogOpen: race.completionOpen }), dispatch);
 </script>
 
 <template>
-  <div class="app-shell">
-    <header class="app-header">
-      <span class="app-title">HORSE RACING</span>
-    </header>
-    <main class="app-main">
-      <p class="app-placeholder">Project scaffold ready. The race UI arrives in milestone 5.</p>
-    </main>
-  </div>
+  <DashboardLayout>
+    <template #header><AppHeader /></template>
+    <template #track><RaceTrack /></template>
+    <template #results><ResultsPanel /></template>
+    <template #program><ProgramPanel /></template>
+    <template #stable><StablePanel /></template>
+  </DashboardLayout>
+  <ProgramCompleteDialog />
 </template>
-
-<style scoped>
-.app-shell {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg);
-  color: var(--text);
-}
-
-.app-header {
-  display: flex;
-  align-items: center;
-  padding: 14px 20px;
-  border-bottom: 1px solid var(--line);
-}
-
-.app-title {
-  font-size: 25px;
-  font-weight: 800;
-  font-stretch: 74%;
-  letter-spacing: 0.02em;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.app-main {
-  flex: 1;
-  padding: var(--gap);
-}
-
-.app-placeholder {
-  margin: 0;
-  color: var(--muted);
-  font-size: 14px;
-}
-</style>

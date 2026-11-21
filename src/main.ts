@@ -8,5 +8,10 @@ import './styles/base.css';
 import { createPinia } from 'pinia';
 import { createApp } from 'vue';
 import App from './App.vue';
+import { parseSeed, useRaceStore } from './stores/race';
 
-createApp(App).use(createPinia()).mount('#app');
+const pinia = createPinia();
+const app = createApp(App).use(pinia);
+// `?seed=123` makes horses, programs and results reproducible (used by E2E tests).
+useRaceStore(pinia).initialize(parseSeed(window.location.search));
+app.mount('#app');

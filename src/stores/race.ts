@@ -1,0 +1,245 @@
+import { defineStore } from 'pinia';
+import { computed, markRaw, ref, shallowRef, watch } from 'vue';
+import {
+  createRng,
+  forkRng,
+  generateHorses,
+  generateProgram as drawProgram,
+  indexRoster,
+  type Horse,
+  type HorseId,
+  type Program,
+  type Rng,
+  type RoundResult,
+} from '@/domain';
+import {
+  buildLiveOrder,
+  createPublishGate,
+  createRaceDirector,
+  sanitizeFrameDt,
+  type DirectorEvent,
+  type DirectorPhase,
+  type LiveOrderEntry,
+  type RaceDirector,
+} from '@/playback';
+import { usePreferencesStore } from './preferences';
+import {
+  buildBoard,
+  buildCompletedRounds,
+  buildCompletionWinners,
+  buildPlaybackControl,
+  buildProgress,
+  buildRounds,
+  buildStable,
+  buildStatus,
+  isGeneratePrimary,
+  type RaceViewState,
+} from './raceView';
+
+/** A random 32-bit seed when none is supplied (outside the pure layers, so host randomness is fine). */
+function randomSeed(): number {
+  const values = new Uint32Array(1);
+  crypto.getRandomValues(values);
+  return values[0] ?? 0;
+}
+
+/** Parses `?seed=123` from a query string; null when absent or invalid. */
+export function parseSeed(search: string): number | null {
+  const raw = new URLSearchParams(search).get('seed');
+  if (raw === null || raw.trim() === '') return null;
+  const value = Number(raw);
+  return Number.isSafeInteger(value) ? value >>> 0 : null;
+}
+
+/**
+ * Game state. Owns the (non-reactive) race director and mirrors only what
+ * the UI needs into reactive state: phase, results, the throttled live
+ * order and the user's inspection choices. Per-frame positions stay in the
+ * director and are read by the renderer directly.
+ */
+export const useRaceStore = defineStore('race', () => {
+  const preferences = usePreferencesStore();
+  const director: RaceDirector = markRaw(createRaceDirector({ speed: preferences.speed }));
+  const liveGate = createPublishGate();
+  let rng: Rng = createRng(randomSeed());
+
+  const seed = ref<number | null>(null);
+  const horses = shallowRef<readonly Horse[]>([]);
+  const program = shallowRef<Program | null>(null);
+  const results = shallowRef<readonly RoundResult[]>([]);
+  const phase = ref<DirectorPhase>('idle');
+  const paused = ref(false);
+  const roundIndex = ref(-1);
+  const liveOrder = shallowRef<readonly LiveOrderEntry[] | null>(null);
+  const inspectedRound = ref<number | null>(null);
+  const expandedRound = ref<number | null>(null);
+  const completionDismissed = ref(false);
+
+  const horsesById = computed<ReadonlyMap<HorseId, Horse>>(() => indexRoster(horses.value));
+  const hasProgram = computed(() => program.value !== null);
+
+  watch(
+    () => preferences.speed,
+    (speed) => {
+      director.setSpeed(speed);
+    },
+    { flush: 'sync' },
+  );
+
+  const syncFromDirector = (): void => {
+    phase.value = director.phase;
+    paused.value = director.paused;
+    roundIndex.value = director.roundIndex;
+  };
+
+  /** Creates the session's roster. A seed makes the whole session reproducible (used by E2E tests). */
+  function initialize(sessionSeed: number | null = null): void {
+    const resolved = sessionSeed ?? randomSeed();
+    seed.value = sessionSeed;
+    rng = createRng(resolved);
+    horses.value = generateHorses(forkRng(rng));
+    program.value = null;
+    results.value = [];
+    liveOrder.value = null;
+    inspectedRound.value = null;
+    expandedRound.value = null;
+    completionDismissed.value = false;
+    liveGate.reset();
+    director.clear();
+    syncFromDirector();
+  }
+
+  /** Draws a new program and resets to round 1 at the gates. Valid at any time, even mid-race. */
+  function generateProgram(): void {
+    if (horses.value.length === 0) initialize();
+    const next = drawProgram(horses.value, forkRng(rng));
+    program.value = next;
+    results.value = [];
+    liveOrder.value = null;
+    inspectedRound.value = null;
+    expandedRound.value = 0;
+    completionDismissed.value = false;
+    liveGate.reset();
+    director.load(horses.value, next);
+    syncFromDirector();
+  }
+
+  /** Start from the gates, or pause / resume. Ignored before a program exists and after completion. */
+  function togglePlayback(): void {
+    const command = director.togglePlayback();
+    if (command === 'started') inspectedRound.value = null;
+    syncFromDirector();
+  }
+
+  const applyEvent = (event: DirectorEvent): boolean => {
+    switch (event.type) {
+      case 'phaseChanged':
+        phase.value = event.phase;
+        if (event.roundIndex !== roundIndex.value) {
+          roundIndex.value = event.roundIndex;
+          expandedRound.value = event.roundIndex;
+          inspectedRound.value = null;
+          liveOrder.value = null;
+          liveGate.reset();
+        }
+        return event.phase === 'running';
+      case 'roundOfficial':
+        results.value = [...results.value, event.result];
+        return false;
+      case 'runnerFinished':
+        return true;
+      case 'standingsChanged':
+      case 'programComplete':
+        return false;
+    }
+  };
+
+  /** Advances the game by one animation frame. Called by the render loop. */
+  function advance(wallDt: number): void {
+    const events = director.frame(wallDt);
+    let force = false;
+    let changed = false;
+    for (const event of events) {
+      if (applyEvent(event)) force = true;
+      if (event.type === 'standingsChanged') changed = true;
+    }
+    const race = director.race;
+    const live = director.phase === 'running' || director.phase === 'settling';
+    if (race !== null && live && liveGate.update(sanitizeFrameDt(wallDt), changed, force)) {
+      liveOrder.value = buildLiveOrder(race);
+    }
+  }
+
+  /** Shows a round's full result on the board (null returns to the live round). */
+  function inspectRound(index: number | null): void {
+    inspectedRound.value = index;
+  }
+
+  function toggleRoundExpanded(index: number): void {
+    if (program.value === null) return;
+    expandedRound.value = expandedRound.value === index ? null : index;
+  }
+
+  function dismissCompletion(): void {
+    completionDismissed.value = true;
+  }
+
+  const viewState = computed<RaceViewState>(() => ({
+    horses: horsesById.value,
+    program: program.value,
+    results: results.value,
+    phase: phase.value,
+    paused: paused.value,
+    roundIndex: roundIndex.value,
+    liveOrder: liveOrder.value,
+    inspectedRound: inspectedRound.value,
+    expandedRound: expandedRound.value,
+    followedHorseId: preferences.followedHorseId,
+  }));
+
+  const status = computed(() => buildStatus(viewState.value));
+  const progress = computed(() => buildProgress(viewState.value));
+  const playbackControl = computed(() => buildPlaybackControl(viewState.value));
+  const generatePrimary = computed(() => isGeneratePrimary(viewState.value));
+  const board = computed(() => buildBoard(viewState.value));
+  const completedRounds = computed(() => buildCompletedRounds(viewState.value));
+  const rounds = computed(() => buildRounds(viewState.value));
+  const stable = computed(() => buildStable(viewState.value));
+  const completionWinners = computed(() => buildCompletionWinners(viewState.value));
+  const completionOpen = computed(() => phase.value === 'complete' && !completionDismissed.value);
+
+  return {
+    seed,
+    horses,
+    horsesById,
+    program,
+    results,
+    phase,
+    paused,
+    roundIndex,
+    liveOrder,
+    inspectedRound,
+    expandedRound,
+    completionDismissed,
+    hasProgram,
+    status,
+    progress,
+    playbackControl,
+    generatePrimary,
+    board,
+    completedRounds,
+    rounds,
+    stable,
+    completionWinners,
+    completionOpen,
+    initialize,
+    generateProgram,
+    togglePlayback,
+    advance,
+    inspectRound,
+    toggleRoundExpanded,
+    dismissCompletion,
+    /** The live director, for the renderer only. Never mutate it from components. */
+    getDirector: (): RaceDirector => director,
+  };
+});

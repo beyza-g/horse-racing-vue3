@@ -1,4 +1,10 @@
-import { distanceMarkers, laneTop, type TrackGeometry } from './geometry';
+import {
+  distanceMarkers,
+  labelFits,
+  laneTop,
+  type HeaderReservation,
+  type TrackGeometry,
+} from './geometry';
 import { FONT_MONO, FONT_SANS, TRACK_COLORS, type TrackPalette } from './palette';
 
 const TAU = Math.PI * 2;
@@ -90,8 +96,9 @@ export function formatClock(seconds: number): string {
 }
 
 /**
- * Draws the header band text and returns the X where it ends, so distance
- * labels can keep clear of it (the PAUSED pill never overlaps a label).
+ * Draws the header band text and returns the areas it occupies, so distance
+ * and FINISH labels keep clear of it (the PAUSED pill and the race clock never
+ * overlap a label).
  */
 export function drawHeader(
   ctx: CanvasRenderingContext2D,
@@ -99,7 +106,7 @@ export function drawHeader(
   P: TrackPalette,
   header: TrackHeader,
   light: boolean,
-): number {
+): HeaderReservation {
   const baseline = 26;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
@@ -138,14 +145,17 @@ export function drawHeader(
   }
   ctx.letterSpacing = '0px';
 
+  let clockLeft = g.width;
   if (header.clockSeconds !== null) {
+    const clock = formatClock(header.clockSeconds);
     ctx.textAlign = 'right';
     ctx.font = `500 13px ${FONT_MONO}`;
     ctx.fillStyle = P.text;
-    ctx.fillText(formatClock(header.clockSeconds), g.width - 16, baseline);
+    ctx.fillText(clock, g.width - 16, baseline);
     ctx.textAlign = 'left';
+    clockLeft = g.width - 16 - ctx.measureText(clock).width;
   }
-  return reservedUntil;
+  return { left: reservedUntil, right: clockLeft };
 }
 
 /** Furlong poles with their labels, skipping labels inside the reserved header area. */
@@ -154,11 +164,11 @@ export function drawDistancePoles(
   g: TrackGeometry,
   P: TrackPalette,
   distance: number,
-  reservedUntilX: number,
+  reserved: HeaderReservation,
 ): void {
   ctx.font = `500 10px ${FONT_MONO}`;
   ctx.textAlign = 'center';
-  for (const marker of distanceMarkers(g, distance, reservedUntilX)) {
+  for (const marker of distanceMarkers(g, distance, reserved)) {
     const x = marker.x;
     ctx.fillStyle = P.pole;
     ctx.fillRect(x, g.top, 1, g.bottom - g.top);
@@ -186,6 +196,7 @@ export function drawStartAndFinish(
   P: TrackPalette,
   leaderProgress: number | null,
   flash: number,
+  reserved: HeaderReservation,
 ): void {
   ctx.fillStyle = P.startLine;
   ctx.fillRect(g.startX, g.top, 1.5, g.bottom - g.top);
@@ -224,8 +235,11 @@ export function drawStartAndFinish(
   ctx.fill();
   ctx.font = `700 10px ${FONT_MONO}`;
   ctx.textAlign = 'center';
-  ctx.fillStyle = P.poleText;
-  ctx.fillText('FINISH', g.finishX, g.top - 18);
+  const halfWidth = ctx.measureText('FINISH').width / 2;
+  if (labelFits(g.finishX, halfWidth, reserved)) {
+    ctx.fillStyle = P.poleText;
+    ctx.fillText('FINISH', g.finishX, g.top - 18);
+  }
 }
 
 /** Darkens the corners. */

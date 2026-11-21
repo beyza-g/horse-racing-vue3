@@ -27,6 +27,7 @@
   --knob: #eceae3;
   --knob-ink: #121714;
   --scrim: rgba(4, 7, 5, 0.62);
+  --dim-opacity: 0.28;
   --label-w: 400;
   --title-w: 700;
 }
@@ -54,6 +55,7 @@
   --knob: #0f1310;
   --knob-ink: #ffffff;
   --scrim: rgba(30, 34, 31, 0.35);
+  --dim-opacity: 0.4;
   --label-w: 500;
   --title-w: 760;
 }
