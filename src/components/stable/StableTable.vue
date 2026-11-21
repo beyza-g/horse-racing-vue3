@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ConditionBadge from '@/components/ui/ConditionBadge.vue';
 import HorseBadge from '@/components/ui/HorseBadge.vue';
 import type { HorseId } from '@/domain';
 import type { StableRow } from '@/stores/raceView';
@@ -20,7 +21,7 @@ defineEmits<{ follow: [horseId: HorseId] }>();
           class="stable-table__row"
           :class="{ 'is-followed': row.followed, 'is-out': row.sittingOut }"
           :aria-pressed="row.followed"
-          :title="`No ${row.number} · ${row.name} · condition ${row.condition} of 100 · ${row.followed ? 'click to stop following' : 'click to follow'}`"
+          :title="`No ${row.number} · ${row.name} · ${row.condition.description} · ${row.followed ? 'click to stop following' : 'click to follow'}`"
           @click="$emit('follow', row.horseId)"
         >
           <HorseBadge :number="row.number" :color="row.color" :muted="row.sittingOut" />
@@ -30,7 +31,7 @@ defineEmits<{ follow: [horseId: HorseId] }>();
           <span class="stable-table__lane mono" :class="{ 'is-in': row.inRound }">{{
             row.lane
           }}</span>
-          <span class="stable-table__condition mono">{{ row.condition }}</span>
+          <ConditionBadge :condition="row.condition" :muted="row.sittingOut" />
         </button>
       </li>
     </ul>
@@ -48,8 +49,8 @@ defineEmits<{ follow: [horseId: HorseId] }>();
 .stable-table__columns,
 .stable-table__row {
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr) 30px 30px;
-  gap: 9px;
+  grid-template-columns: 22px minmax(0, 1fr) 24px 36px;
+  gap: 6px;
   align-items: center;
 }
 
@@ -118,8 +119,7 @@ defineEmits<{ follow: [horseId: HorseId] }>();
   font-weight: 700;
 }
 
-.is-out .stable-table__name,
-.is-out .stable-table__condition {
+.is-out .stable-table__name {
   color: var(--faint);
 }
 
@@ -132,11 +132,5 @@ defineEmits<{ follow: [horseId: HorseId] }>();
 
 .stable-table__lane.is-in {
   color: var(--accent-text);
-}
-
-.stable-table__condition {
-  font-size: 12px;
-  color: var(--muted);
-  text-align: right;
 }
 </style>

@@ -11,6 +11,17 @@ export {
   RUNNERS_PER_ROUND,
   type RoundDistance,
 } from './constants';
+export {
+  BODY_CONDITION,
+  conditionBand,
+  conditionForBodyScore,
+  conditionSpeedFactor,
+  conditionStaminaWeakness,
+  hennekeGrade,
+  OPTIMAL_CONDITION,
+  toBodyConditionScore,
+  type ConditionBand,
+} from './condition';
 export { DomainError, type DomainErrorCode } from './errors';
 export { createHorse, generateHorses, indexRoster, silkColor } from './horses';
 export { createRound, generateProgram, type RoundInput } from './program';

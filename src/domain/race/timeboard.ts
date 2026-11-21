@@ -1,3 +1,4 @@
+import { OPTIMAL_CONDITION } from '../condition';
 import { invariant } from '../errors';
 import type { Race } from './createRace';
 import { cruisingSpeed, PHYSICS } from './physics';
@@ -26,8 +27,8 @@ export const TIMEBOARD = Object.freeze({
   referenceSeconds: 60,
   /** Average speed lost per extra kilometre (stamina), in m/s. */
   speedLossPerKm: 0.35,
-  /** Condition treated as "nominal" for calibration (mid-range). */
-  nominalCondition: 50,
+  /** Condition of the calibration horse: race fit, at the performance optimum. */
+  nominalCondition: OPTIMAL_CONDITION,
 });
 
 const assertDistance = (distance: number): void => {

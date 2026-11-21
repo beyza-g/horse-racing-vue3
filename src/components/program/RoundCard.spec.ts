@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
-import type { RoundCardView } from '@/stores/raceView';
+import { buildCondition, type RoundCardView } from '@/stores/raceView';
 import RoundCard from './RoundCard.vue';
 
 const card: RoundCardView = {
@@ -18,7 +18,7 @@ const card: RoundCardView = {
     number: String(i + 1).padStart(2, '0'),
     name: `Horse ${i + 1}`,
     color: 'red',
-    condition: 50,
+    condition: buildCondition(44 + i),
     followed: i === 0,
   })),
 };
@@ -30,6 +30,14 @@ describe('RoundCard', () => {
     expect(head.attributes('aria-expanded')).toBe('true');
     expect(head.attributes('aria-controls')).toBe('round-3-lineup');
     expect(wrapper.findAll('.round-card__row')).toHaveLength(10);
+  });
+
+  it("shows each runner's condition with its band in the tooltip", () => {
+    const wrapper = mount(RoundCard, { props: { card } });
+    const badge = wrapper.findAll('.condition-badge')[0]!;
+    expect(badge.text()).toBe('44');
+    expect(badge.classes()).toContain('is-fit');
+    expect(badge.attributes('aria-label')).toContain('Race fit');
   });
 
   it('emits toggle and follow', async () => {

@@ -15,6 +15,7 @@ import {
   boardRoundIndex,
   buildBoard,
   buildCompletedRounds,
+  buildCondition,
   buildPlaybackControl,
   buildProgress,
   buildRounds,
@@ -46,6 +47,26 @@ const state = (patch: Partial<RaceViewState> = {}): RaceViewState => ({
   ...patch,
 });
 const idle = state({ program: null, phase: 'idle', roundIndex: -1, expandedRound: null });
+
+describe('buildCondition', () => {
+  it('describes the score, band, tone and Henneke grade', () => {
+    expect(buildCondition(44)).toEqual({
+      value: 44,
+      band: 'race-fit',
+      tone: 'fit',
+      bandLabel: 'Race fit',
+      description: 'Condition 44 of 100 · Race fit · body condition 4.5 of 9 (Moderately thin)',
+    });
+    expect(buildCondition(100)).toMatchObject({ band: 'overweight', tone: 'off' });
+    expect(buildCondition(1)).toMatchObject({ band: 'underweight', tone: 'off' });
+    expect(buildCondition(34)).toMatchObject({ band: 'lean', tone: 'near' });
+    expect(buildCondition(56)).toMatchObject({ band: 'fleshy', tone: 'near' });
+  });
+
+  it('gives the top of the scale no special treatment: 100 is out of condition', () => {
+    expect(buildCondition(100).tone).toBe('off');
+  });
+});
 
 describe('buildStatus', () => {
   it.each<[Partial<RaceViewState>, string, string | null]>([
@@ -239,6 +260,7 @@ describe('buildStable', () => {
     expect(rows.filter((r) => r.sittingOut)).toHaveLength(10);
     const first = program.rounds[0]!.lineup[0]!;
     expect(rows.find((r) => r.horseId === first)?.lane).toBe('L1');
+    for (const row of rows) expect(row.condition.value).toBe(horses.get(row.horseId)!.condition);
   });
 
   it('never greys out the followed horse and shows no lanes when idle', () => {

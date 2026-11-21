@@ -64,6 +64,26 @@ describe('realistic durations', () => {
   });
 });
 
+describe('agreement with real-world par times', () => {
+  /**
+   * Common handicapping rule of thumb for good flat times: about 12 s per
+   * furlong up to a mile, about 14 s per furlong beyond (1 furlong = 201.168 m).
+   */
+  const ruleOfThumb = (metres: number): number => {
+    const furlong = 201.168;
+    const mile = 8 * furlong;
+    return metres <= mile ? (metres / furlong) * 12 : 8 * 12 + ((metres - mile) / furlong) * 14;
+  };
+
+  it.each([1000, ...ROUND_DISTANCES])(
+    '%s m is within 3% of the furlong rule of thumb',
+    (distance) => {
+      const expected = ruleOfThumb(distance);
+      expect(Math.abs(realisticDuration(distance) - expected) / expected).toBeLessThan(0.03);
+    },
+  );
+});
+
 describe('timeboard calibration against the engine', () => {
   it.each([1000, ...ROUND_DISTANCES])(
     'a nominal field over %s m displays within 3% of the realistic duration',

@@ -1,4 +1,4 @@
-import { CONDITION_MAX } from '../constants';
+import { conditionSpeedFactor, conditionStaminaWeakness } from '../condition';
 import { invariant } from '../errors';
 import { randomBetween, type Rng } from '../random';
 
@@ -17,12 +17,10 @@ export const MAX_RACE_SECONDS = 120;
  * for race physics). Speeds are metres per simulation second.
  */
 export const PHYSICS = Object.freeze({
-  /** Base cruising speed before condition and jitter. */
-  baseSpeed: 88,
-  /** Extra cruising speed per condition point. */
-  conditionSpeedGain: 0.32,
-  /** Per-race random cruising-speed offset, +/- this value. */
-  baseSpeedJitter: 4,
+  /** Cruising speed of a perfectly conditioned horse (see src/domain/condition.ts). */
+  peakSpeed: 106,
+  /** Per-race "form on the day" cruising-speed offset, +/- this value (about 2.4%). */
+  baseSpeedJitter: 2.5,
   /** Maximum random reaction delay when the gates open. */
   maxStartDelay: 0.3,
   /** Relative amplitude of in-race speed variation. */
@@ -35,8 +33,8 @@ export const PHYSICS = Object.freeze({
   ]),
   /** Race progress after which fatigue starts. */
   fatigueOnset: 0.5,
-  /** Maximum speed lost to fatigue by a condition-0 horse at the line. */
-  fatigueStrength: 0.07,
+  /** Speed lost to fatigue at the line by a horse with stamina weakness 1 (before distance scaling). */
+  fatigueStrength: 0.1,
   /** Distance scaling: fatigue multiplier = base + gain * distance / reference. */
   fatigueDistanceBase: 0.6,
   fatigueDistanceGain: 0.6,
@@ -58,6 +56,8 @@ export interface RunnerProfile {
   readonly condition: number;
   /** Cruising speed in m/s. */
   readonly baseSpeed: number;
+  /** Late-race fade sensitivity in [0, 1], derived from condition. */
+  readonly staminaWeakness: number;
   /** Seconds after the start before the runner moves. */
   readonly startDelay: number;
   /** Phase offsets (radians) for the pace noise waves. */
@@ -78,9 +78,9 @@ export type PaceStrategy = (
   distance: number,
 ) => number;
 
-/** Cruising speed for a condition plus a jitter offset. */
+/** Cruising speed for a condition plus a "form on the day" jitter offset. Peaks at the optimal condition. */
 export function cruisingSpeed(condition: number, jitter: number): number {
-  return PHYSICS.baseSpeed + condition * PHYSICS.conditionSpeedGain + jitter;
+  return PHYSICS.peakSpeed * conditionSpeedFactor(condition) + jitter;
 }
 
 /** Default profile: condition-driven cruising speed with seeded jitter, delay and noise phases. */
@@ -92,6 +92,7 @@ export const defaultProfile: ProfileStrategy = (condition, rng) => {
   return Object.freeze({
     condition,
     baseSpeed: cruisingSpeed(condition, jitter),
+    staminaWeakness: conditionStaminaWeakness(condition),
     startDelay,
     noisePhases: Object.freeze(phases),
   });
@@ -99,12 +100,14 @@ export const defaultProfile: ProfileStrategy = (condition, rng) => {
 
 /**
  * Speed multiplier in (0, 1] from fatigue. 1 until the onset point, then
- * falling linearly to the line. Better condition and shorter races fade less.
+ * falling linearly to the line. Horses closer to optimal condition (lower
+ * stamina weakness) and shorter races fade less.
+ *
+ * @param weakness Stamina weakness in [0, 1] from `conditionStaminaWeakness`.
  */
-export function fatigueFactor(progress: number, condition: number, distance: number): number {
+export function fatigueFactor(progress: number, weakness: number, distance: number): number {
   if (progress <= PHYSICS.fatigueOnset) return 1;
   const late = (Math.min(progress, 1) - PHYSICS.fatigueOnset) / (1 - PHYSICS.fatigueOnset);
-  const weakness = 1 - condition / CONDITION_MAX;
   const distanceScale =
     PHYSICS.fatigueDistanceBase +
     (distance / PHYSICS.fatigueReferenceDistance) * PHYSICS.fatigueDistanceGain;
@@ -129,7 +132,7 @@ export function paceNoise(elapsed: number, phases: readonly [number, number, num
 export const conditionPace: PaceStrategy = (profile, progress, elapsed, distance) =>
   profile.baseSpeed *
   (1 + PHYSICS.noiseAmplitude * paceNoise(elapsed, profile.noisePhases)) *
-  fatigueFactor(progress, profile.condition, distance);
+  fatigueFactor(progress, profile.staminaWeakness, distance);
 
 /**
  * Moves `current` towards `target` with exponential smoothing. The blend

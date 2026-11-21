@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { conditionStaminaWeakness, OPTIMAL_CONDITION } from '../condition';
 import { createRng } from '../random';
 import {
   approachSpeed,
@@ -16,16 +17,23 @@ import {
 const profile = (condition: number): RunnerProfile => ({
   condition,
   baseSpeed: cruisingSpeed(condition, 0),
+  staminaWeakness: conditionStaminaWeakness(condition),
   startDelay: 0,
   noisePhases: [0, 0, 0],
 });
 
 describe('cruisingSpeed', () => {
-  it('increases with condition', () => {
-    expect(cruisingSpeed(100, 0)).toBeGreaterThan(cruisingSpeed(1, 0));
-    expect(cruisingSpeed(100, 0) - cruisingSpeed(1, 0)).toBeCloseTo(
-      99 * PHYSICS.conditionSpeedGain,
-    );
+  it('peaks at the optimal condition, not at the top of the scale', () => {
+    const peak = cruisingSpeed(OPTIMAL_CONDITION, 0);
+    expect(peak).toBeCloseTo(PHYSICS.peakSpeed, 2);
+    for (const condition of [1, 20, 40, 60, 80, 100]) {
+      expect(cruisingSpeed(condition, 0)).toBeLessThanOrEqual(peak);
+    }
+    expect(cruisingSpeed(100, 0)).toBeLessThan(cruisingSpeed(1, 0));
+  });
+
+  it('adds the form jitter linearly', () => {
+    expect(cruisingSpeed(60, 2) - cruisingSpeed(60, 0)).toBeCloseTo(2, 10);
   });
 });
 
@@ -35,6 +43,7 @@ describe('defaultProfile', () => {
     for (let i = 0; i < 500; i++) {
       const result = defaultProfile(50, rng);
       const jitter = result.baseSpeed - cruisingSpeed(50, 0);
+      expect(result.staminaWeakness).toBe(conditionStaminaWeakness(50));
       expect(Math.abs(jitter)).toBeLessThanOrEqual(PHYSICS.baseSpeedJitter);
       expect(result.startDelay).toBeGreaterThanOrEqual(0);
       expect(result.startDelay).toBeLessThan(PHYSICS.maxStartDelay);
@@ -60,31 +69,31 @@ describe('fatigueFactor', () => {
     }
   });
 
-  it('never affects a condition-100 horse', () => {
-    expect(fatigueFactor(1, 100, 2200)).toBe(1);
+  it('never affects a horse with no stamina weakness', () => {
+    expect(fatigueFactor(1, 0, 2200)).toBe(1);
   });
 
-  it('reaches its documented maximum for condition 1 at the line of the longest race', () => {
-    const expected = 1 - 0.99 * PHYSICS.fatigueStrength * 1.2;
+  it('reaches its documented maximum for weakness 1 at the line of the longest race', () => {
+    const expected = 1 - PHYSICS.fatigueStrength * 1.2;
     expect(fatigueFactor(1, 1, 2200)).toBeCloseTo(expected, 10);
   });
 
   it('decreases monotonically with progress after the onset', () => {
     let previous = 1;
     for (let progress = 0.5; progress <= 1; progress += 0.05) {
-      const value = fatigueFactor(progress, 30, 1800);
+      const value = fatigueFactor(progress, 0.6, 1800);
       expect(value).toBeLessThanOrEqual(previous);
       previous = value;
     }
   });
 
-  it('bites harder on longer races and weaker horses', () => {
-    expect(fatigueFactor(0.9, 30, 2200)).toBeLessThan(fatigueFactor(0.9, 30, 1200));
-    expect(fatigueFactor(0.9, 10, 1600)).toBeLessThan(fatigueFactor(0.9, 90, 1600));
+  it('bites harder on longer races and weaker stamina', () => {
+    expect(fatigueFactor(0.9, 0.6, 2200)).toBeLessThan(fatigueFactor(0.9, 0.6, 1200));
+    expect(fatigueFactor(0.9, 0.9, 1600)).toBeLessThan(fatigueFactor(0.9, 0.2, 1600));
   });
 
   it('clamps progress past the line', () => {
-    expect(fatigueFactor(1.4, 20, 2000)).toBe(fatigueFactor(1, 20, 2000));
+    expect(fatigueFactor(1.4, 0.5, 2000)).toBe(fatigueFactor(1, 0.5, 2000));
   });
 });
 
@@ -107,15 +116,22 @@ describe('conditionPace', () => {
     expect(conditionPace(profile(60), 0.2, 0, 1400)).toBeCloseTo(cruisingSpeed(60, 0), 10);
   });
 
-  it('is faster for better condition at the same point', () => {
-    expect(conditionPace(profile(100), 0.9, 0, 2200)).toBeGreaterThan(
-      conditionPace(profile(1), 0.9, 0, 2200),
-    );
+  it('is fastest for a race-fit horse late in a long race', () => {
+    const fit = conditionPace(profile(OPTIMAL_CONDITION), 0.9, 0, 2200);
+    expect(fit).toBeGreaterThan(conditionPace(profile(1), 0.9, 0, 2200));
+    expect(fit).toBeGreaterThan(conditionPace(profile(100), 0.9, 0, 2200));
   });
 
   it('stays positive for the worst case', () => {
-    const worst: RunnerProfile = { ...profile(1), baseSpeed: cruisingSpeed(1, -4) };
-    for (let t = 0; t < 30; t += 0.05) expect(conditionPace(worst, 1, t, 2200)).toBeGreaterThan(0);
+    for (const condition of [1, 100]) {
+      const worst: RunnerProfile = {
+        ...profile(condition),
+        baseSpeed: cruisingSpeed(condition, -PHYSICS.baseSpeedJitter),
+      };
+      for (let t = 0; t < 30; t += 0.05) {
+        expect(conditionPace(worst, 1, t, 2200)).toBeGreaterThan(0);
+      }
+    }
   });
 });
 

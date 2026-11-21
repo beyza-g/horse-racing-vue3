@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { LINEUP_1_TO_10, makeRoster, makeRound, uniformProfile } from '../__fixtures__/roster';
+import { OPTIMAL_CONDITION } from '../condition';
 import { RUNNERS_PER_ROUND } from '../constants';
 import { DomainError } from '../errors';
 import { generateHorses } from '../horses';
@@ -101,6 +102,7 @@ describe('Race.tick', () => {
       profile: (condition) => ({
         condition,
         baseSpeed: 90,
+        staminaWeakness: 0,
         startDelay: 0.25,
         noisePhases: [0, 0, 0],
       }),
@@ -234,8 +236,11 @@ describe('live standings', () => {
     race.tick(Math.round(5 / SIM_STEP));
     race.runners.forEach((runner, i) => {
       expect(runner.position).toBeGreaterThanOrEqual(before[i]!);
-      expect(runner.position).toBeLessThan(1200 * (1 + PHYSICS.pullUpDistanceRatio) + 1);
+      // Speed eases towards a pull-up target that reaches zero at the pull-up
+      // distance, so horses may coast slightly past it, but never far.
+      expect(runner.position).toBeLessThan(1200 * (1 + 1.5 * PHYSICS.pullUpDistanceRatio));
       expect(runner.speed).toBeGreaterThanOrEqual(0);
+      expect(runner.speed).toBeLessThan(1);
     });
     expect(race.standingsVersion).toBe(version);
     expect(race.result()).toBe(result);
@@ -262,6 +267,7 @@ describe('finish-line tie-breaking', () => {
       profile: (condition) => ({
         condition,
         baseSpeed: condition === 50 ? 100.001 : 100,
+        staminaWeakness: 0,
         startDelay: 0,
         noisePhases: [0, 0, 0],
       }),
@@ -274,25 +280,77 @@ describe('finish-line tie-breaking', () => {
   });
 });
 
-describe('condition boundaries', () => {
-  it.each([1, 100])('a field of condition-%s horses always finishes', (condition) => {
-    const uniform = makeRoster(() => condition);
-    for (let seed = 0; seed < 20; seed++) {
-      const round = { ...makeRound(LINEUP_1_TO_10, seed), index: 5, distance: 2200 as const };
-      expect(createRace(round, uniform).runToCompletion().finishers).toHaveLength(10);
-    }
+describe('condition model in races', () => {
+  const at = (distance: 1200 | 2200, seed: number) => ({
+    ...makeRound(LINEUP_1_TO_10, seed),
+    index: distance === 1200 ? 0 : 5,
+    distance,
   });
 
-  it('a condition-100 horse beats a condition-1 horse in the vast majority of races', () => {
-    const extremes = makeRoster((id) => (id === 1 ? 100 : id === 2 ? 1 : 50));
-    let wins = 0;
-    const races = 100;
-    for (let seed = 0; seed < races; seed++) {
-      const result = createRace(makeRound(LINEUP_1_TO_10, seed), extremes).runToCompletion();
-      const place = (id: number) => result.finishers.find((f) => f.horseId === id)!.place;
-      if (place(1) < place(2)) wins++;
+  it.each([1, OPTIMAL_CONDITION, 100])(
+    'a field of condition-%s horses always finishes',
+    (condition) => {
+      const uniform = makeRoster(() => condition);
+      for (let seed = 0; seed < 20; seed++) {
+        expect(createRace(at(2200, seed), uniform).runToCompletion().finishers).toHaveLength(10);
+      }
+    },
+  );
+
+  it.each([1, 100])(
+    'a race-fit horse beats a condition-%s horse in the vast majority of races',
+    (extreme) => {
+      const field = makeRoster((id) => (id === 1 ? OPTIMAL_CONDITION : id === 2 ? extreme : 50));
+      let wins = 0;
+      for (let seed = 0; seed < 100; seed++) {
+        const result = createRace(at(2200, seed), field).runToCompletion();
+        const place = (id: number) => result.finishers.find((f) => f.horseId === id)!.place;
+        if (place(1) < place(2)) wins++;
+      }
+      expect(wins).toBeGreaterThanOrEqual(90);
+    },
+  );
+
+  it('the top of the scale is not the best: condition 100 loses to race fitness', () => {
+    const field = makeRoster((id) => (id === 1 ? 100 : OPTIMAL_CONDITION));
+    let lastOrNearLast = 0;
+    for (let seed = 0; seed < 50; seed++) {
+      const result = createRace(at(1200, seed), field).runToCompletion();
+      if (result.finishers.find((f) => f.horseId === 1)!.place >= 8) lastOrNearLast++;
     }
-    expect(wins).toBeGreaterThanOrEqual(95);
+    expect(lastOrNearLast).toBeGreaterThanOrEqual(40);
+  });
+
+  /** Mean finishing-time ratio of horse 1 to the race-fit rest of the field. */
+  function relativeTime(condition: number, distance: 1200 | 2200): number {
+    const field = makeRoster((id) => (id === 1 ? condition : OPTIMAL_CONDITION));
+    let ratio = 0;
+    const seeds = 40;
+    for (let seed = 0; seed < seeds; seed++) {
+      const result = createRace(at(distance, seed), field).runToCompletion();
+      const own = result.finishers.find((f) => f.horseId === 1)!.time;
+      const rest = result.finishers.filter((f) => f.horseId !== 1);
+      ratio += own / (rest.reduce((sum, f) => sum + f.time, 0) / rest.length);
+    }
+    return ratio / seeds;
+  }
+
+  it('thin horses fade over longer trips; heavy horses are slow from the start', () => {
+    const thinGap1200 = relativeTime(5, 1200) - 1;
+    const thinGap2200 = relativeTime(5, 2200) - 1;
+    const heavyGap1200 = relativeTime(100, 1200) - 1;
+    const heavyGap2200 = relativeTime(100, 2200) - 1;
+    expect(thinGap1200).toBeGreaterThan(0);
+    expect(heavyGap1200).toBeGreaterThan(0);
+    // Stamina: the thin horse loses relatively more ground as the trip gets longer.
+    expect(thinGap2200 / thinGap1200).toBeGreaterThan(heavyGap2200 / heavyGap1200);
+    // Speed: over a sprint the heavy horse is the slower of the two.
+    expect(heavyGap1200).toBeGreaterThan(thinGap1200);
+  });
+
+  it('keeps fields competitive: extremes lose seconds, not minutes', () => {
+    expect(relativeTime(1, 2200)).toBeLessThan(1.12);
+    expect(relativeTime(100, 2200)).toBeLessThan(1.12);
   });
 });
 

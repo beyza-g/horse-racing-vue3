@@ -67,6 +67,7 @@ src/
   domain/                 # Pure rules engine (no Vue/DOM). Public API: src/domain/index.ts
     constants.ts          # HORSE_COUNT=20, RUNNERS_PER_ROUND=10, ROUND_DISTANCES, CONDITION_MIN/MAX
     errors.ts             # DomainError (typed `code`), invariant, assertIntegerInRange
+    condition.ts          # 1-100 score <-> Henneke BCS 1-9, bands, peaked speed/stamina curve, drawCondition
     types.ts              # Horse, Round, Program, FinishRecord, RoundResult (all readonly)
     random.ts             # createRng(seed) (mulberry32), forkRng, randomInt, shuffle, sample
     data/horseNames.ts    # 28-name pool, coat colours
@@ -116,9 +117,9 @@ src/
     track/    RaceTrack (container, canvas host), EmptyProgramCard
     results/  ResultsPanel (container), ResultsLeaderboard, CompletedRounds
     program/  ProgramPanel (container), RoundCard
-    stable/   StablePanel (container), StableTable
+    stable/   StablePanel (container), StableTable, ConditionLegend
     dialogs/  ProgramCompleteDialog (container)
-    ui/       AppButton, StatusPill, HorseBadge, ColorTick, PanelCard (wrapper),
+    ui/       AppButton, StatusPill, HorseBadge, ConditionBadge, ColorTick, PanelCard (wrapper),
               ModalDialog (wrapper: teleport, aria-modal, focus trap), icons/*
   styles/     tokens.css (light/dark), base.css
   App.vue  main.ts
@@ -146,6 +147,29 @@ globals are disabled. Use the `@/` alias outside the pure layers; inside
 
 - Exactly 20 horses, IDs 1–20, unique names (from a 28-name pool), unique colours
   (20 distinct hues), condition an integer in [1, 100].
+
+## Condition model (researched; see `src/domain/condition.ts`)
+
+- The 1–100 score (required by the brief) maps linearly onto the Henneke body
+  condition score (BCS 1–9: 1 poor, 5 moderate, 9 extremely fat), the scale
+  used for horses in practice. It is **not** "higher is better".
+- Performance peaks at **BCS 4.5** (condition 44): Thoroughbreds in heavy race
+  training are lean, around BCS 4 (Ohio State extension) and measured near 4.5
+  in racing Thoroughbreds and Arabians (Braz J Vet Res Anim Sci, 2019).
+- Thin horses lack reserves and muscle → mainly a **stamina** penalty (they
+  fade, more over longer trips). Heavy horses have a worse power-to-weight
+  ratio → mainly a **speed** penalty plus some fade. Per BCS point, excess
+  costs more speed than deficit (underweight-to-ideal horses out-earn
+  overweight ones in a retrospective study). Evidence is limited, so the
+  constants are a documented modelling choice in `CONDITION_MODEL`.
+- Bands: underweight < 3.5 ≤ lean < 4 ≤ race fit ≤ 5 < fleshy < 6.5 ≤ overweight.
+  The UI shows the score with a band marker (dot / ring / bar, never colour
+  alone) and the full description as its accessible label.
+- Stables are drawn with ~70% of horses around race fitness and the rest
+  uniform over 1–100 (lay-offs, poor doers, heavy horses), using only
+  arithmetic on the seeded `Rng` so seeds replay identically.
+- Expected outcomes (300 seeded programs): ~5 distinct winners per 6-round
+  program; race-fit horses win ~1.7× their share, overweight horses rarely.
 - A program has 6 rounds, in order: 1200, 1400, 1600, 1800, 2000, 2200 m.
 - Each round draws 10 distinct random horses from the 20; lane = draw order.
 - Rounds run strictly one at a time; results appear as each round becomes official.
@@ -195,8 +219,10 @@ globals are disabled. Use the `@/` alias outside the pure layers; inside
     so a race takes about 10-25 s on screen.
   - _Timeboard time_ (`src/domain/race/timeboard.ts`): what spectators read.
     `display = sim × timeboardScale(distance)`, calibrated from `PHYSICS` so a
-    nominal (condition 50) horse runs 1000 m in about 60 s, slowing with
-    distance (1200 m ≈ 1:12, 2200 m ≈ 2:15). One positive factor per round, so
+    race-fit horse runs 1000 m in about 60 s, slowing with distance
+    (1200 m ≈ 1:12, 2200 m ≈ 2:15). This matches the handicapping rule of
+    thumb of ~12 s per furlong up to a mile and ~14 s per furlong beyond
+    within 3% (asserted in `timeboard.spec.ts`). One positive factor per round, so
     order, ties and gaps are preserved, and the live clock always agrees with
     the official times. Always format with `formatTimeboard` /
     `formatOfficialTime` (`m:ss.cc`, constant width); never show raw sim
@@ -214,19 +240,19 @@ observeFinish(race))` → `accumulator.push(presentationDt × speed × factor)` 
 
 ## Edge cases that must be covered (tests + implementation)
 
-| Area                    | Expected behaviour                                                                                                                                                |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Before a program exists | Start disabled; Space/1/2/4/F/T still safe; track shows the empty-program card; clicking the canvas is a no-op                                                    |
-| Tab switch / long frame | Wall `dt` clamped to 0.05 s; negative or `NaN` dt treated as 0; no jump in race state                                                                             |
-| Rapid toggles           | Any interleaving of pause/resume/speed changes yields sim time = Σ(clamped dt × speed while unpaused); identical results to an untouched run with the same seed   |
-| Pause in every phase    | Countdown, running, settling and intermission all freeze; resume continues exactly where it stopped                                                               |
-| Mid-race regeneration   | Clears results, live order, inspect/view and follow targets that no longer apply; director resets to `ready` for round 1; no stale events                         |
-| Completion              | Status `complete`; Start hidden; Generate is the single primary "new program" path; Space or Start cannot restart a finished program                              |
-| Completion modal        | Blocks interaction (`aria-modal`, focus trap, initial focus on primary action, background `inert`); Enter = new program, Esc = view track; focus returns on close |
-| Keyboard shortcuts      | Ignored while typing in inputs; Space ignored when a button has focus (native activation instead); modal shortcuts take precedence                                |
-| Boundaries              | Condition 1 and 100 both finish; photo finishes ordered by interpolated time, then horse ID; runners past the line are clamped visually                           |
-| Responsive              | Desktop/tablet/mobile grids with no horizontal overflow at 320 px; no layout shift when status, pills, times or labels change                                     |
-| Storage                 | `localStorage` unavailable or throwing ⇒ theme falls back to dark silently                                                                                        |
+| Area                    | Expected behaviour                                                                                                                                                                                                                     |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Before a program exists | Start disabled; Space/1/2/4/F/T still safe; track shows the empty-program card; clicking the canvas is a no-op                                                                                                                         |
+| Tab switch / long frame | Wall `dt` clamped to 0.05 s; negative or `NaN` dt treated as 0; no jump in race state                                                                                                                                                  |
+| Rapid toggles           | Any interleaving of pause/resume/speed changes yields sim time = Σ(clamped dt × speed while unpaused); identical results to an untouched run with the same seed                                                                        |
+| Pause in every phase    | Countdown, running, settling and intermission all freeze; resume continues exactly where it stopped                                                                                                                                    |
+| Mid-race regeneration   | Clears results, live order, inspect/view and follow targets that no longer apply; director resets to `ready` for round 1; no stale events                                                                                              |
+| Completion              | Status `complete`; Start hidden; Generate is the single primary "new program" path; Space or Start cannot restart a finished program                                                                                                   |
+| Completion modal        | Blocks interaction (`aria-modal`, focus trap, initial focus on primary action, background `inert`); Enter = new program, Esc = view track; focus returns on close                                                                      |
+| Keyboard shortcuts      | Ignored while typing in inputs; Space ignored when a button has focus (native activation instead); modal shortcuts take precedence                                                                                                     |
+| Boundaries              | Condition 1, 44 (optimum) and 100 all finish; 100 is out of condition, not the best; band edges (BCS 3.5 / 4 / 5 / 6.5) tested; photo finishes ordered by interpolated time, then horse ID; runners past the line are clamped visually |
+| Responsive              | Desktop/tablet/mobile grids with no horizontal overflow at 320 px; no layout shift when status, pills, times or labels change                                                                                                          |
+| Storage                 | `localStorage` unavailable or throwing ⇒ theme falls back to dark silently                                                                                                                                                             |
 
 ## Component conventions
 

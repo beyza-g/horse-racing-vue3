@@ -61,6 +61,37 @@ test.describe('race flow', () => {
     await expect(firstRunner).toHaveAttribute('aria-pressed', 'true');
   });
 
+  test('stable shows every condition with its body-condition band and a key', async ({ page }) => {
+    await openApp(page);
+    const badges = page.locator('.stable-table .condition-badge');
+    await expect(badges).toHaveCount(20);
+    const labels = await badges.evaluateAll((els) =>
+      els.map((el) => el.getAttribute('aria-label') ?? ''),
+    );
+    for (const label of labels) {
+      expect(label).toMatch(
+        /^Condition \d{1,3} of 100 · (Underweight|Lean|Race fit|Fleshy|Overweight) · body condition \d\.\d of 9/,
+      );
+    }
+    expect(labels.some((label) => label.includes('Race fit'))).toBe(true);
+    await expect(page.getByRole('list', { name: 'Condition key' })).toContainText('Race fit');
+  });
+
+  test('official times read like real races: about 1:10 over 1200 m', async ({ page }) => {
+    await openApp(page);
+    await generateAndStart(page, 4);
+    await expect(page.getByText('1 / 6')).toBeVisible({ timeout: 30_000 });
+    const time = await page
+      .locator('.completed__row')
+      .first()
+      .locator('.completed__time')
+      .innerText();
+    const [minutes, seconds] = time.split(':');
+    const total = Number(minutes) * 60 + Number(seconds);
+    expect(total).toBeGreaterThan(62);
+    expect(total).toBeLessThan(80);
+  });
+
   test('theme toggles with T and persists across reloads', async ({ page }) => {
     await openApp(page);
     await page.keyboard.press('t');

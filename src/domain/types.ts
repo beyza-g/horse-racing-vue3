@@ -11,7 +11,11 @@ export interface Horse {
   readonly color: string;
   /** Cosmetic body colour for rendering. Not unique. */
   readonly coat: string;
-  /** Integer in [CONDITION_MIN, CONDITION_MAX]. Higher is faster and fades less. */
+  /**
+   * Integer in [CONDITION_MIN, CONDITION_MAX], mapped linearly onto the 1-9
+   * Henneke body condition score. Performance peaks near BCS 4.5 (condition
+   * ~45); thinner horses fade, heavier horses are slower (see condition.ts).
+   */
   readonly condition: number;
 }
 

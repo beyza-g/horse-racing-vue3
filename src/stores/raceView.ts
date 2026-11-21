@@ -4,8 +4,12 @@
  * display rules are testable without Vue or Pinia.
  */
 import {
+  conditionBand,
   formatOfficialTime,
+  hennekeGrade,
   ROUND_DISTANCES,
+  toBodyConditionScore,
+  type ConditionBand,
   type Horse,
   type HorseId,
   type Program,
@@ -308,13 +312,63 @@ export function buildCompletedRounds(s: RaceViewState): CompletedRoundsView {
   };
 }
 
+/** Visual tone of a condition: at the optimum, close to it, or well off it. */
+export type ConditionTone = 'fit' | 'near' | 'off';
+
+export interface ConditionView {
+  readonly value: number;
+  readonly band: ConditionBand;
+  readonly tone: ConditionTone;
+  /** Short band name, e.g. "Race fit". */
+  readonly bandLabel: string;
+  /** Full description for tooltips and screen readers. */
+  readonly description: string;
+}
+
+const BAND_LABELS: Readonly<Record<ConditionBand, string>> = {
+  underweight: 'Underweight',
+  lean: 'Lean',
+  'race-fit': 'Race fit',
+  fleshy: 'Fleshy',
+  overweight: 'Overweight',
+};
+
+const BAND_TONES: Readonly<Record<ConditionBand, ConditionTone>> = {
+  underweight: 'off',
+  lean: 'near',
+  'race-fit': 'fit',
+  fleshy: 'near',
+  overweight: 'off',
+};
+
+/** Condition 1-100 with its body condition band, e.g. "44 · Race fit · BCS 4.5 (Moderately thin)". */
+export function buildCondition(condition: number): ConditionView {
+  const band = conditionBand(condition);
+  const bcs = toBodyConditionScore(condition).toFixed(1);
+  return {
+    value: condition,
+    band,
+    tone: BAND_TONES[band],
+    bandLabel: BAND_LABELS[band],
+    description: `Condition ${condition} of 100 · ${BAND_LABELS[band]} · body condition ${bcs} of 9 (${hennekeGrade(condition)})`,
+  };
+}
+
+const UNKNOWN_CONDITION: ConditionView = {
+  value: 0,
+  band: 'race-fit',
+  tone: 'near',
+  bandLabel: 'Unknown',
+  description: 'Condition unknown',
+};
+
 export interface LineupRow {
   readonly lane: number;
   readonly horseId: HorseId;
   readonly number: string;
   readonly name: string;
   readonly color: string;
-  readonly condition: number;
+  readonly condition: ConditionView;
   readonly followed: boolean;
 }
 
@@ -358,7 +412,7 @@ export function buildRounds(s: RaceViewState): readonly RoundCardView[] {
           number: pad(horseId),
           name: horse?.name ?? `Horse ${horseId}`,
           color: horse?.color ?? 'transparent',
-          condition: horse?.condition ?? 0,
+          condition: horse ? buildCondition(horse.condition) : UNKNOWN_CONDITION,
           followed: horseId === s.followedHorseId,
         };
       }),
@@ -371,7 +425,7 @@ export interface StableRow {
   readonly number: string;
   readonly name: string;
   readonly color: string;
-  readonly condition: number;
+  readonly condition: ConditionView;
   /** "L4" if running in the current round, otherwise "–". */
   readonly lane: string;
   readonly inRound: boolean;
@@ -394,7 +448,7 @@ export function buildStable(s: RaceViewState): readonly StableRow[] {
       number: pad(horse.id),
       name: horse.name,
       color: horse.color,
-      condition: horse.condition,
+      condition: buildCondition(horse.condition),
       lane: laneIndex >= 0 ? `L${laneIndex + 1}` : '–',
       inRound: laneIndex >= 0,
       sittingOut: lineup !== null && laneIndex < 0 && !followed,

@@ -1,7 +1,8 @@
 import { CONDITION_MAX, CONDITION_MIN, HORSE_COUNT } from './constants';
 import { COAT_COLORS, HORSE_NAME_POOL } from './data/horseNames';
 import { assertIntegerInRange, invariant } from './errors';
-import { pickOne, randomInt, sample, type Rng } from './random';
+import { drawCondition } from './condition';
+import { pickOne, sample, type Rng } from './random';
 import type { Horse, HorseId } from './types';
 
 /** Number of evenly spaced hues used for silk colours. */
@@ -91,7 +92,7 @@ export function generateHorses(rng: Rng): readonly Horse[] {
       name,
       color: silkColor(index),
       coat: pickOne(rng, COAT_COLORS),
-      condition: randomInt(rng, CONDITION_MIN, CONDITION_MAX),
+      condition: drawCondition(rng),
     }),
   );
   assertValidRoster(horses);

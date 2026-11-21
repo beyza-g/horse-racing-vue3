@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ConditionBadge from '@/components/ui/ConditionBadge.vue';
 import HorseBadge from '@/components/ui/HorseBadge.vue';
 import IconChevron from '@/components/ui/icons/IconChevron.vue';
 import StatusPill from '@/components/ui/StatusPill.vue';
@@ -54,13 +55,13 @@ const lineupId = `round-${props.card.index + 1}-lineup`;
         class="round-card__row"
         :class="{ 'is-followed': row.followed }"
         :aria-pressed="row.followed"
-        :title="`Lane ${row.lane} · No ${row.number} ${row.name} · condition ${row.condition}`"
+        :title="`Lane ${row.lane} · No ${row.number} ${row.name} · ${row.condition.description}`"
         @click="$emit('follow', row.horseId)"
       >
         <span class="round-card__lane mono">{{ row.lane }}</span>
         <HorseBadge :number="row.number" :color="row.color" />
         <span class="round-card__name" :class="{ 'is-strong': row.followed }">{{ row.name }}</span>
-        <span class="round-card__condition mono">{{ row.condition }}</span>
+        <ConditionBadge :condition="row.condition" />
       </button>
     </div>
   </div>
@@ -147,7 +148,7 @@ const lineupId = `round-${props.card.index + 1}-lineup`;
 .round-card__columns,
 .round-card__row {
   display: grid;
-  grid-template-columns: 32px 22px minmax(0, 1fr) 30px;
+  grid-template-columns: 32px 22px minmax(0, 1fr) 40px;
   gap: 8px;
   align-items: center;
   padding: 0 6px;
@@ -202,11 +203,5 @@ const lineupId = `round-${props.card.index + 1}-lineup`;
 
 .round-card__name.is-strong {
   font-weight: 700;
-}
-
-.round-card__condition {
-  font-size: 11px;
-  color: var(--muted);
-  text-align: right;
 }
 </style>

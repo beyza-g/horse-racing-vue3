@@ -28,5 +28,11 @@ export const LINEUP_1_TO_10: readonly HorseId[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10
 
 /** Identical profiles for every runner: no delay, no noise, fixed cruising speed. */
 export function uniformProfile(baseSpeed = 100): ProfileStrategy {
-  return (condition) => ({ condition, baseSpeed, startDelay: 0, noisePhases: [0, 0, 0] });
+  return (condition) => ({
+    condition,
+    baseSpeed,
+    staminaWeakness: 0,
+    startDelay: 0,
+    noisePhases: [0, 0, 0],
+  });
 }
