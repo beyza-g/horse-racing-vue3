@@ -50,10 +50,8 @@ The first E2E run needs a browser: `npx playwright install chromium`.
    you decide.
 
 Keyboard: `Space` start/pause, `1` `2` `4` speed, `F` focus mode, `T` theme,
-`Esc` stop following, then leave focus mode. In the summary dialog, `Enter`
-starts a new program and `Esc` returns to the track. In the "discard the
-current program?" dialog, `Esc` keeps the program; only the focused button
-can confirm.
+`Esc` stop following, then leave focus mode. Dialog keys are listed in
+[UI/UX](docs/ux.md#keyboard).
 
 ## The brief, requirement by requirement
 
@@ -67,7 +65,7 @@ can confirm.
 | Horses visibly move                        | Canvas 2D track with gallop, sprint and finish animation                                                         |
 | Clean, scalable code                       | Layered architecture with enforced boundaries ([architecture](docs/architecture.md))                             |
 | Vuex or Pinia                              | Pinia setup stores                                                                                               |
-| Component-based design                     | Containers, presentational components and slot wrappers ([UI/UX](docs/ux.md#component-structure))                |
+| Component-based design                     | Containers, presentational components and slot wrappers ([architecture](docs/architecture.md#components))        |
 | Bonus: unit, E2E and visual tests          | 619 Vitest tests, 46 Playwright tests including screenshot baselines ([quality](docs/quality.md))                |
 
 One interpretation to note: the brief says the horse list contains "between 1

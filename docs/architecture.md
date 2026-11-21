@@ -113,12 +113,11 @@ idle ─load─► ready ─start─► countdown ─2.4 s─► running ─last
 ## State management
 
 The director is a plain object owned by the race store and marked `markRaw`,
-so Vue never proxies the hot simulation state. Outside the store it is only
-reachable as a `RaceDirectorView` (`getDirector()`): its state and runner
-motion, with the current race as a `RaceView`, and no commands (`frame`,
-`pause`, `load`…) or `tick`. The renderer therefore cannot advance or
-reset the game; the type system enforces what used to be a comment. Everything reactive is listed
-here, with the reason it is stored rather than derived or kept local.
+so Vue never proxies the hot simulation state. Outside the store it is
+reachable only as a `RaceDirectorView` (`getDirector()`): state and runner
+motion, with the race as a `RaceView`, but no commands and no `tick`, so the
+renderer cannot advance or reset the game. Everything reactive is listed
+below with the reason it is stored rather than derived or kept local.
 
 **Race store** (`stores/race.ts`)
 
@@ -171,6 +170,17 @@ only if it paused. Pausing is already deterministic, so a cancelled
 confirmation leaves the eventual results unchanged, which a store spec
 asserts over a full program.
 
+## Components
+
+| Kind           | Examples                                                                                                      | Rule                                  |
+| -------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| Containers     | `AppHeader`, `RaceTrack`, `ResultsPanel`, `ProgramPanel`, `StablePanel`, `FollowBadge`, the three dialogs     | Read stores, wire events              |
+| Presentational | `ResultsLeaderboard`, `CompletedRounds`, `RoundCard`, `StableTable`, `StatusIndicator`, `ConditionBadge`, ... | Typed props in, events out; no stores |
+| Wrappers       | `DashboardLayout`, `PanelCard`, `ModalDialog`                                                                 | Structure or behaviour through slots  |
+
+Presentational components receive view models from the pure builders, so a
+component test only needs props.
+
 ## Rendering
 
 The track is a Canvas 2D surface rather than DOM elements: ten animated
@@ -189,7 +199,7 @@ follows its container with a `ResizeObserver`.
 - `standingsVersion` changes only when the order or a placing changes, so the
   store skips redundant updates.
 - Stamina weakness is computed once per runner per race, not per tick.
-- Production bundle: about 169 kB of JavaScript (61 kB gzipped) and 39 kB of
+- Production bundle: about 170 kB of JavaScript (62 kB gzipped) and 41 kB of
   CSS; fonts are self-hosted, so there is no external request or font swap.
 
 ## Tooling
