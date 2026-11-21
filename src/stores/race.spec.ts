@@ -346,6 +346,33 @@ describe('playing a full program', () => {
     expect(updates).toBeLessThanOrEqual(Math.ceil((frames * FRAME) / 0.25) + 1);
   });
 
+  it('live-order publications rebuild only the board, not the other panels', () => {
+    const { race } = setup();
+    race.generateProgram();
+    race.togglePlayback();
+    advanceUntil(race, () => race.liveOrder !== null);
+    const snapshot = () => ({
+      board: race.board,
+      stable: race.stable,
+      rounds: race.rounds,
+      standings: race.standings,
+      status: race.status,
+      progress: race.progress,
+      completed: race.completedRounds,
+    });
+    const before = snapshot();
+    const liveBefore = race.liveOrder;
+    advanceUntil(race, () => race.liveOrder !== liveBefore, 120);
+    const after = snapshot();
+    expect(after.board).not.toBe(before.board);
+    expect(after.stable).toBe(before.stable);
+    expect(after.rounds).toBe(before.rounds);
+    expect(after.standings).toBe(before.standings);
+    expect(after.status).toBe(before.status);
+    expect(after.progress).toBe(before.progress);
+    expect(after.completed).toBe(before.completed);
+  });
+
   it('shows the live board while racing and the official board afterwards', () => {
     const { race } = setup();
     race.generateProgram();

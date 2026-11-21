@@ -54,13 +54,13 @@ test.describe('visual', () => {
     await expect(canvas).toHaveScreenshot('track-hover.png', { maxDiffPixelRatio: 0.02 });
   });
 
-  test('standings tab and full table after round 1', async ({ page }) => {
+  test('standings tab and full table after round 2, with movement', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await openApp(page);
     await generateButton(page).click();
     await page.locator('header').getByRole('button', { name: '4x' }).click();
     await page.locator('header').getByRole('button', { name: 'Start', exact: true }).click();
-    await expect(page.getByText('1 / 6')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText('2 / 6')).toBeVisible({ timeout: 45_000 });
     await page.locator('header').getByRole('button', { name: 'Pause' }).click();
     await page.getByRole('tab', { name: 'Standings' }).click();
     await page.mouse.move(0, 0);

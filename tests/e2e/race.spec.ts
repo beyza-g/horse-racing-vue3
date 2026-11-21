@@ -64,6 +64,10 @@ test.describe('race flow', () => {
       /rank 1, 10 points from 1 run/,
     );
     await expect(page.getByText('After 1 of 6 rounds')).toBeVisible();
+    const truncated = await page
+      .locator('.standings-list__name')
+      .evaluateAll((els) => els.filter((el) => el.scrollWidth > el.clientWidth).length);
+    expect(truncated).toBe(0);
 
     await page.getByRole('button', { name: 'Full table' }).click();
     const dialog = page.getByRole('dialog', { name: 'Standings' });

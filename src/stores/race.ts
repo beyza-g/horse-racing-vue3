@@ -66,7 +66,6 @@ export const useRaceStore = defineStore('race', () => {
   const liveGate = createPublishGate();
   let rng: Rng = createRng(randomSeed());
 
-  const seed = ref<number | null>(null);
   const horses = shallowRef<readonly Horse[]>([]);
   const program = shallowRef<Program | null>(null);
   const results = shallowRef<readonly RoundResult[]>([]);
@@ -104,7 +103,6 @@ export const useRaceStore = defineStore('race', () => {
   /** Creates the session's roster. A seed makes the whole session reproducible (used by E2E tests). */
   function initialize(sessionSeed: number | null = null): void {
     const resolved = sessionSeed ?? randomSeed();
-    seed.value = sessionSeed;
     rng = createRng(resolved);
     horses.value = generateHorses(forkRng(rng));
     program.value = null;
@@ -246,6 +244,12 @@ export const useRaceStore = defineStore('race', () => {
     syncFromDirector();
   }
 
+  /**
+   * Shared input for the view models. The live order is left out on purpose:
+   * it publishes up to four times a second while racing, and only the board
+   * reads it. Including it here would rebuild (and re-render) every panel on
+   * each publication; instead the board combines the two below.
+   */
   const viewState = computed<RaceViewState>(() => ({
     horses: horsesById.value,
     program: program.value,
@@ -253,7 +257,7 @@ export const useRaceStore = defineStore('race', () => {
     phase: phase.value,
     paused: paused.value,
     roundIndex: roundIndex.value,
-    liveOrder: liveOrder.value,
+    liveOrder: null,
     inspectedRound: inspectedRound.value,
     expandedRound: expandedRound.value,
     followedHorseId: preferences.followedHorseId,
@@ -263,7 +267,7 @@ export const useRaceStore = defineStore('race', () => {
   const progress = computed(() => buildProgress(viewState.value));
   const playbackControl = computed(() => buildPlaybackControl(viewState.value));
   const generatePrimary = computed(() => isGeneratePrimary(viewState.value));
-  const board = computed(() => buildBoard(viewState.value));
+  const board = computed(() => buildBoard({ ...viewState.value, liveOrder: liveOrder.value }));
   const completedRounds = computed(() => buildCompletedRounds(viewState.value));
   const rounds = computed(() => buildRounds(viewState.value));
   const stable = computed(() => buildStable(viewState.value));
@@ -280,7 +284,6 @@ export const useRaceStore = defineStore('race', () => {
   );
 
   return {
-    seed,
     horses,
     horsesById,
     program,

@@ -89,6 +89,7 @@ src/
     horses.ts             # createHorse (validating factory), generateHorses, silkColor, roster checks
     program.ts            # createRound (validating factory), generateProgram (6 rounds x 10 + raceSeed)
     programStandings.ts   # Points across rounds (10-8-6-5-4-3-2-1), countback, shared ranks, form figures
+                          # (rank movement per round is derived in stores/raceView.ts)
     race/
       physics.ts          # SIM_STEP, PHYSICS tuning table, pace/profile strategies, pure calculators
       standings.ts        # compareLive, compareCrossings, in-place insertion sort, gapToLeader
@@ -110,9 +111,9 @@ src/
     drawTrack.ts          # Turf, lanes, rails, header band (PAUSED pill), poles, finish line
     drawHorse.ts          # Horse and jockey figure driven by RunnerMotion
     drawRunners.ts        # Runners, name tags, rank badges, leader/follow markers, gates
-    drawOverlays.ts       # Press-start card, countdown, winner card
+    drawOverlays.ts       # Gate scrim (the Start card is DOM: ReadyCard), countdown, winner card
     particles.ts          # Pooled dust particles (seeded, presentation-time aging)
-    renderer.ts           # createTrackRenderer(canvas): resize, render(scene), horseAt(y)
+    renderer.ts           # createTrackRenderer(canvas): resize, render(scene), horseAt(y), laneAt(y)
   test/                   # Vitest setup (jsdom) and the recording fake 2D context
   stores/
     race.ts               # Facade over the (markRaw) director: horses, program, results,
@@ -136,7 +137,7 @@ src/
     program/  ProgramPanel (container), RoundCard
     stable/   StablePanel (container, Roster/Standings tabs), StableTable, StandingsList, ConditionLegend
     dialogs/  ProgramCompleteDialog, RegenerateConfirmDialog, StandingsDialog (containers)
-    ui/       AppButton (primary/secondary/danger), StatusPill (live pulse), TabSwitch, HorseBadge,
+    ui/       AppButton (primary/secondary/danger), StatusPill (live pulse), TabSwitch, MovementBadge, HorseBadge,
               ConditionBadge, ColorTick, PanelCard (wrapper),
               ModalDialog (wrapper: teleport, aria-modal, focus trap), icons/*
   styles/     tokens.css (light/dark), base.css
@@ -176,9 +177,12 @@ globals are disabled. Use the `@/` alias outside the pure layers; inside
   crossing time, then by horse ID for stability.
 - Program standings: 10-8-6-5-4-3-2-1 points for 1st-8th per official round
   (39 per round), countback on more wins then seconds and so on, shared rank
-  when fully level, derived purely from results (never stored).
+  when fully level, derived purely from results (never stored). Rank movement
+  (`▲2` / `▼1`) is shown in the standings only (changes once per round), never
+  on the live leaderboard (it would flicker); none on a horse's first run.
 - Deliberate simplifications (straight track, one surface, no tactics or
-  weights, condition fixed per session) are listed in `docs/domain.md`.
+  weights, condition fixed per session, compressed playback) and the
+  real-world surfaces and geometry they simplify are in `docs/domain.md`.
 
 ## Condition model (researched; see `src/domain/condition.ts`)
 
@@ -236,7 +240,10 @@ globals are disabled. Use the `@/` alias outside the pure layers; inside
   slow-motion, countdown progress, intermission progress) is computed by pure
   functions in `src/playback`, so the renderer only maps numbers to pixels.
 - Per-frame positions never enter reactive state. The store receives the live
-  order at most every 250 ms (or immediately when a runner finishes).
+  order at most every 250 ms (or immediately when a runner finishes), and
+  only the board view model reads it: it is kept out of the shared view-model
+  input so a publication never rebuilds the other panels. The full store
+  inventory (what is stored and why) is in `docs/architecture.md`.
 - **Three kinds of time, never mixed:**
   - _Simulation time_ (`race.elapsed`, `finishTime`): fixed-step engine
     seconds; decides results. A race lasts roughly 10-25 s of it.
@@ -290,7 +297,8 @@ globals are disabled. Use the `@/` alias outside the pure layers; inside
 ## Component conventions
 
 - **Containers** (`AppHeader`, `RaceTrack`, `ResultsPanel`, `ProgramPanel`,
-  `StablePanel`, `ProgramCompleteDialog`) read stores and wire events.
+  `StablePanel`, `ProgramCompleteDialog`, `RegenerateConfirmDialog`,
+  `StandingsDialog`) read stores and wire events.
   **Presentational** components take typed props (view models from
   `stores/raceView.ts`) and emit events; they never import stores.
   **Wrappers** (`PanelCard`, `ModalDialog`, `DashboardLayout`) provide chrome,
@@ -298,7 +306,7 @@ globals are disabled. Use the `@/` alias outside the pure layers; inside
 - Every clickable row is a native `<button>`; toggles expose `aria-pressed`,
   disclosures `aria-expanded`, the status line is `aria-live="polite"`.
 - Theme-dependent values belong in tokens (e.g. `--dim-opacity`, `--row-hover`,
-  `--inactive-*`, `--medal-*`, `--danger`). Do not use
+  `--inactive-*`, `--medal-*`, `--danger`, `--move-up` / `--move-down`). Do not use
   `:global(...) .x` in scoped styles: Vue compiles it to the global part only.
 
 ## Git workflow

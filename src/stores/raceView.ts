@@ -508,6 +508,18 @@ export interface StandingCell {
   readonly state: 'placed' | 'pending' | 'absent';
 }
 
+/**
+ * Change in standings rank caused by the latest official round, like a
+ * league table's movement column. Only for horses ranked both before and
+ * after that round, and only when they moved.
+ */
+export interface StandingMovement {
+  readonly direction: 'up' | 'down';
+  readonly places: number;
+  /** e.g. "up 2 places since round 3". */
+  readonly spoken: string;
+}
+
 export interface StandingRow {
   readonly horseId: HorseId;
   /** "1", "=3" for a shared rank, or "–" before the horse has an official run. */
@@ -522,6 +534,7 @@ export interface StandingRow {
   readonly form: string;
   readonly cells: readonly StandingCell[];
   readonly followed: boolean;
+  readonly movement: StandingMovement | null;
   /** Full sentence for tooltips and screen readers. */
   readonly description: string;
 }
@@ -542,6 +555,15 @@ export function buildStandings(s: RaceViewState): StandingsView {
   const ids = [...s.horses.keys()];
   const table = computeProgramStandings(ids, s.results);
   const hasResults = s.results.length > 0;
+  // Ranks before the latest official round, for the movement column.
+  const previousRound = s.results.length - 1;
+  const previousRanks = new Map<HorseId, number>(
+    s.results.length >= 2
+      ? computeProgramStandings(ids, s.results.slice(0, -1))
+          .filter((standing) => standing.starts > 0)
+          .map((standing) => [standing.horseId, standing.rank])
+      : [],
+  );
   const rows = table.map((standing): StandingRow => {
     const horse = s.horses.get(standing.horseId);
     const name = horse?.name ?? `Horse ${standing.horseId}`;
@@ -557,6 +579,16 @@ export function buildStandings(s: RaceViewState): StandingsView {
       .map((place, i) => (place === null ? null : `${formatOrdinal(place)} in round ${i + 1}`))
       .filter((text): text is string => text !== null);
     const raced = standing.starts > 0;
+    const before = previousRanks.get(standing.horseId);
+    const shift = before === undefined || !raced ? 0 : before - standing.rank;
+    const movement: StandingMovement | null =
+      shift === 0
+        ? null
+        : {
+            direction: shift > 0 ? 'up' : 'down',
+            places: Math.abs(shift),
+            spoken: `${shift > 0 ? 'up' : 'down'} ${plural(Math.abs(shift), 'place')} since round ${previousRound}`,
+          };
     return {
       horseId: standing.horseId,
       rank: raced ? `${standing.tied ? '=' : ''}${standing.rank}` : '–',
@@ -569,8 +601,9 @@ export function buildStandings(s: RaceViewState): StandingsView {
       form: formFigures(standing.places),
       cells,
       followed: standing.horseId === s.followedHorseId,
+      movement,
       description: raced
-        ? `${name}: rank ${standing.tied ? 'equal ' : ''}${standing.rank}, ${plural(standing.points, 'point')} from ${plural(standing.starts, 'run')} (${placings.join(', ')})`
+        ? `${name}: rank ${standing.tied ? 'equal ' : ''}${standing.rank}${movement ? ` (${movement.spoken})` : ''}, ${plural(standing.points, 'point')} from ${plural(standing.starts, 'run')} (${placings.join(', ')})`
         : `${name}: no official run yet`,
     };
   });

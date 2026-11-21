@@ -113,26 +113,40 @@ idle ─load─► ready ─start─► countdown ─2.4 s─► running ─last
 ## State management
 
 The director is a plain object owned by the race store and marked `markRaw`,
-so Vue never proxies the hot simulation state. The store mirrors only what
-the UI needs:
+so Vue never proxies the hot simulation state. Everything reactive is listed
+here, with the reason it is stored rather than derived or kept local.
 
-| Reactive state                | Updated                                                  |
-| ----------------------------- | -------------------------------------------------------- |
-| Phase, round, paused          | On director events and user actions                      |
-| Results                       | When a round becomes official                            |
-| Live order                    | At most every 250 ms, immediately when a runner finishes |
-| Inspected and expanded rounds | On user actions and round changes                        |
-| Regenerate confirmation open  | When Generate would discard progress                     |
+**Race store** (`stores/race.ts`)
 
-Per-frame positions never enter reactive state; the renderer reads them from
-the director directly. Purely visual pointer state, such as which track lane
-is hovered, stays local to the track's loop composable and is passed to the
-renderer in the scene; it is not game state, so it never enters a store. Derived displays come from **pure view-model builders**
-in `stores/raceView.ts` (status line, board rows, program cards, stable rows,
-condition badges, medals, and whether regenerating needs confirmation), which
-are tested without Vue or Pinia. A second store holds viewer preferences:
-theme (persisted, tolerant of blocked storage), speed, focus mode and the
-followed horse.
+| State                                                           | Why it is stored                                                                                              |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `horses`, `program`                                             | Session roster and current program; inputs to every panel. Immutable objects in `shallowRef`s                 |
+| `results`                                                       | Official round results; the director is not reactive, so the store mirrors them when a round is made official |
+| `phase`, `paused`, `roundIndex`                                 | Reactive mirror of the director's state, updated on its events and on user actions                            |
+| `liveOrder`                                                     | Throttled live leaderboard (at most every 250 ms, immediately on a finish); read by the board only            |
+| `inspectedRound`, `expandedRound`                               | User view choices that game events must reset (a new round expands itself and clears inspection)              |
+| `completionDismissed`, `confirmRegenerateOpen`, `standingsOpen` | Dialog state that game flow and shortcuts must coordinate: pausing, never stacking, closing on regenerate     |
+
+Plain (non-reactive) variables in the same store hold the session's seeded
+generator and two "resume after this dialog" flags; nothing renders them.
+
+**Preferences store** (`stores/preferences.ts`): `theme` (persisted),
+`speed` (drives the director through a synchronous watcher), `focusMode` and
+`followedHorseId` (read by several panels and the renderer).
+
+**Deliberately not in a store:** per-frame positions and motion (the
+renderer reads the director directly), the hovered track lane (local to the
+track's loop composable), the Roster/Standings tab (local to the panel), the
+completion dialog's reveal and focus-return flags (local to the dialog),
+and every derived display. Derived displays come from **pure view-model
+builders** in `stores/raceView.ts` (status line, board rows, program cards,
+stable rows, standings and movement, condition badges, medals, and whether
+regenerating needs confirmation), tested without Vue or Pinia.
+
+**Reactivity granularity.** The view models share one computed input, except
+the live order, which only the board reads. Keeping it out of the shared
+input means a live-order publication rebuilds the board alone instead of
+every panel; a store spec asserts the other view models keep their identity.
 
 **Program standings** are a pure domain function
 (`computeProgramStandings` in `src/domain/programStandings.ts`) of the
@@ -168,7 +182,7 @@ follows its container with a `ResizeObserver`.
 - `standingsVersion` changes only when the order or a placing changes, so the
   store skips redundant updates.
 - Stamina weakness is computed once per runner per race, not per tick.
-- Production bundle: about 167 kB of JavaScript (61 kB gzipped) and 38 kB of
+- Production bundle: about 169 kB of JavaScript (61 kB gzipped) and 39 kB of
   CSS; fonts are self-hosted, so there is no external request or font swap.
 
 ## Tooling

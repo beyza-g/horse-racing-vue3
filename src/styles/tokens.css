@@ -44,6 +44,9 @@
   --medal-ink: #14110a;
   --medal-ring: transparent;
   --danger: #ef7a5a;
+  /* Standings movement; resolves per theme through the condition tones. */
+  --move-up: var(--cond-fit);
+  --move-down: var(--cond-off);
   --on-danger: #1a0b06;
   --label-w: 400;
   --title-w: 700;

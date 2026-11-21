@@ -49,8 +49,9 @@ The current round is highlighted and opens automatically.
 header. **Roster**: number, name, lane in the current round and condition;
 horses not running in the current round are greyed out. **Standings**:
 program points so far (10-8-6-5-4-3-2-1 for 1st to 8th), rank (shared ranks
-shown as `=5`), horses yet to race muted at the bottom, and a **Full table**
-button for every placing in every round.
+shown as `=5`), the movement caused by the latest round (`▲2`, `▼1`), horses
+yet to race muted at the bottom, and a **Full table** button for every
+placing in every round.
 
 **Standings table.** A dialog with one row per horse: rank, horse and
 points first, then R1 to R6, each a medal pill for 1st to 3rd, the place for
@@ -117,6 +118,16 @@ desktop and mobile widths). The full horse-by-round grid needs room the
 column cannot give, which is what the dialog is for. Opening it mid-race
 pauses the race, because a blocking dialog should not let a race play out
 unseen.
+
+**Movement where it means something.** Rank movement is shown in the
+standings, which change only when a round becomes official, so `▲2` tells
+the story of that round. It is deliberately not shown on the live
+leaderboard: the live order republishes up to four times a second and horses
+swap constantly, so arrows there would flicker; the rows already slide to
+their new places and the track shows the overtakes. The arrow's shape
+carries the direction (colour only reinforces it), the badge sits in a
+fixed-width slot that stays empty when there is no movement, and screen
+readers hear it in the row's label ("up 2 places since round 2").
 
 **Pointing at a lane.** With a mouse or pen over the track, the lane under
 the pointer gets a neutral, low-contrast wash with hairline edges, and the

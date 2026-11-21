@@ -149,17 +149,51 @@ are separated by countback (more wins, then more seconds, and so on down the
 placings); horses still level share a rank. Form figures follow the racing
 convention (one character per run, oldest first, `0` for 10th). The table is
 a pure function of the official results (`src/domain/programStandings.ts`),
-so it is fully deterministic. Note that a horse drawn into more rounds has
-more chances to score; that is inherent to the brief's random draw and is
-part of the fun, not a fairness rule.
+so it is fully deterministic. Like a league table, the standings show each
+horse's movement caused by the latest official round (`▲2`, `▼1`), but only
+for horses ranked both before and after it; a horse's first run has no
+movement. Note that a horse drawn into more rounds has more chances to
+score; that is inherent to the brief's random draw and is part of the fun,
+not a fairness rule.
+
+## Real-world tracks
+
+What a faithful racecourse would involve, and what the simulation shows
+instead:
+
+- **Surfaces.** Flat racing runs on turf (most common in Europe), dirt (most
+  common in the United States) and synthetic or all-weather surfaces such as
+  Polytrack and Tapeta, blends of sand, fibre, rubber and wax. [^surface]
+  Dirt tends to produce a faster early pace and turf races often turn into a
+  sprint in the straight; turf is the most affected by weather, described as
+  the going (firm to heavy). Synthetics were adopted for consistency in all
+  weather and for less kickback (material thrown into the faces of trailing
+  horses). [^surface] [^cbs]
+- **Geometry.** Most racecourses are ovals. Races of a mile (about 1600 m) or
+  more usually include at least two turns, and runners drawn wide cover
+  extra ground on each turn, so the draw matters. [^turns] Chutes extend a
+  straight so that shorter races can start away from a turn. [^chute] Some
+  courses run straight sprints: Flemington's 1200 m "straight six" and
+  Ascot's straight mile are well-known examples. [^straight]
+
+**How the simulation relates to that:** every round runs on one straight,
+neutral course drawn as turf. That is close to reality for the 1200 m and
+1400 m rounds (straight sprints exist at these distances) and a deliberate
+simplification from about 1600 m, where real races would turn. With no
+turns, a lane is only a starting position: it carries no draw advantage and
+no runner covers extra ground.
 
 ## Deliberate simplifications
 
 These are scope decisions, not oversights:
 
-- **One straight track, one surface.** No bends, rail position, turf versus
-  dirt, going (firm to heavy), weather or draw bias. The rule-of-thumb times
-  are surface-agnostic for the same reason.
+- **One straight track, one surface** (see [Real-world tracks](#real-world-tracks)).
+  No bends, rail position, turf versus dirt versus synthetic, going (firm to
+  heavy), weather, kickback or draw bias. The rule-of-thumb times are
+  surface-agnostic for the same reason.
+- **Compressed playback, realistic clock.** A race plays in roughly 10 to 25
+  seconds on screen while the timeboard shows realistic durations (about a
+  minute per 1000 m); see [Race times](#race-times).
 - **No race tactics or weights.** No front-runners versus closers, no jockey
   skill, no weight carried or handicapping. Pace variation is smooth noise.
 - **Condition is fixed per session.** A horse may run several rounds in one
@@ -192,3 +226,13 @@ These are scope decisions, not oversights:
 [^times]: [Lady and the Track: Inside racing, got time?](https://ladyandthetrack.com/news/20823/inside-racing-got-time-times.html)
 
 [^timeform]: [Timeform: analysis of overall times](https://www.timeform.com/racing/articles/the-timeform-knowledge-analysis-of-overall-times-2262015)
+
+[^surface]: [Track surface (Wikipedia)](https://en.wikipedia.org/wiki/Track_surface)
+
+[^cbs]: [Synthetic surfaces gaining traction at major horse racing tracks (CBS News)](https://www.cbsnews.com/baltimore/news/synthetic-surfaces-gaining-traction-at-major-horse-racing-tracks)
+
+[^turns]: [Why one or two turns matters (America's Best Racing)](https://www.americasbestracing.net/node/33705)
+
+[^chute]: [Chute (racecourse) (Wikipedia)](https://en.wikipedia.org/wiki/Chute_%28racecourse%29)
+
+[^straight]: [Notable racetracks around the world with straight courses (Victoria Racing Club)](https://vrc.com.au/latest-news/flemingtons-iconic-straight-six)

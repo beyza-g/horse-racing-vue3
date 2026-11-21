@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ColorTick from '@/components/ui/ColorTick.vue';
+import MovementBadge from '@/components/ui/MovementBadge.vue';
 import type { HorseId } from '@/domain';
 import type { StandingsView } from '@/stores/raceView';
 
@@ -16,7 +17,7 @@ defineEmits<{ follow: [horseId: HorseId] }>();
 <template>
   <div class="standings-list">
     <div class="standings-list__columns mono" aria-hidden="true">
-      <span>#</span><span /><span>HORSE</span><span class="is-right">PTS</span>
+      <span>#</span><span /><span /><span>HORSE</span><span class="is-right">PTS</span>
     </div>
     <ol class="standings-list__rows" aria-label="Program standings">
       <li v-for="row in standings.rows" :key="row.horseId">
@@ -30,6 +31,7 @@ defineEmits<{ follow: [horseId: HorseId] }>();
           @click="$emit('follow', row.horseId)"
         >
           <span class="standings-list__rank mono">{{ row.rank }}</span>
+          <MovementBadge :movement="row.movement" />
           <ColorTick :color="row.starts === 0 ? 'var(--inactive-bg)' : row.color" />
           <span class="standings-list__name" :class="{ 'is-strong': row.followed }">{{
             row.name
@@ -52,8 +54,8 @@ defineEmits<{ follow: [horseId: HorseId] }>();
 .standings-list__columns,
 .standings-list__row {
   display: grid;
-  grid-template-columns: 22px 4px minmax(0, 1fr) 28px;
-  gap: 8px;
+  grid-template-columns: 22px 24px 4px minmax(0, 1fr) 28px;
+  gap: 6px;
   align-items: center;
 }
 

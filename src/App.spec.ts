@@ -328,6 +328,35 @@ describe('App', () => {
     });
   });
 
+  describe('results panel', () => {
+    it('inspects a finished round, returns to live, and follows from the board', async () => {
+      const { wrapper: w, race, prefs } = mountApp();
+      prefs.setSpeed(4);
+      race.generateProgram();
+      race.togglePlayback();
+      for (let i = 0; i < 200_000 && !(race.roundIndex === 1 && race.phase === 'running'); i++) {
+        race.advance(1 / 60);
+      }
+      await nextTick();
+      expect(w.get('.leaderboard__title').text()).toBe('Round 2');
+
+      await w.get('.completed__row').trigger('click');
+      expect(race.inspectedRound).toBe(0);
+      expect(w.get('.leaderboard__title').text()).toBe('Round 1');
+      expect(w.get('.completed__row').attributes('aria-pressed')).toBe('true');
+
+      await w.get('.leaderboard__back').trigger('click');
+      expect(race.inspectedRound).toBeNull();
+      expect(w.get('.leaderboard__title').text()).toBe('Round 2');
+      expect(w.find('.leaderboard__back').exists()).toBe(false);
+
+      const firstRow = w.findAll('.leaderboard__button')[0]!;
+      await firstRow.trigger('click');
+      expect(prefs.followedHorseId).toBe(race.program!.rounds[1]!.lineup[0]);
+      expect(firstRow.attributes('aria-pressed')).toBe('true');
+    });
+  });
+
   describe('dismissing the follow by clicking outside', () => {
     it('clears on a non-interactive area, keeps it on controls and while a dialog is open', async () => {
       const { wrapper: w, prefs, race } = mountApp();

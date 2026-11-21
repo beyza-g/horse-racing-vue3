@@ -15,6 +15,7 @@ const row = (patch: Partial<StandingRow>): StandingRow => ({
   form: '12',
   cells: [],
   followed: false,
+  movement: null,
   description: 'Iron Halo: rank 1, 18 points from 2 runs (1st in round 1, 2nd in round 2)',
   ...patch,
 });
@@ -39,6 +40,23 @@ describe('StandingsList', () => {
     expect(rows[0]!.attributes('title')).toContain('form 12');
     expect(rows[1]!.classes()).toContain('is-unraced');
     expect(rows[1]!.attributes('aria-pressed')).toBe('true');
+  });
+
+  it('shows the movement since the last round in a fixed slot', () => {
+    const moved: StandingsView = {
+      ...view,
+      rows: [
+        row({ movement: { direction: 'up', places: 2, spoken: 'up 2 places since round 1' } }),
+      ],
+    };
+    const wrapper = mount(StandingsList, { props: { standings: moved } });
+    const badge = wrapper.get('.movement');
+    expect(badge.classes()).toContain('is-up');
+    expect(badge.text()).toBe('2');
+    expect(badge.attributes('aria-hidden')).toBe('true');
+    const still = mount(StandingsList, { props: { standings: view } });
+    expect(still.findAll('.movement')).toHaveLength(2);
+    expect(still.get('.movement').text()).toBe('');
   });
 
   it('emits follow', async () => {

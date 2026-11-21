@@ -353,6 +353,41 @@ describe('buildStandings', () => {
     expect(view.officialRounds).toBe(6);
   });
 
+  it('shows no movement before a second official round', () => {
+    const view = buildStandings(state({ phase: 'intermission', results: allResults.slice(0, 1) }));
+    expect(view.rows.every((r) => r.movement === null)).toBe(true);
+  });
+
+  it('reports rank movement caused by the latest round, matching the two tables', () => {
+    const before = buildStandings(state({ results: allResults.slice(0, 2) }));
+    const after = buildStandings(state({ results: allResults.slice(0, 3) }));
+    const rankBefore = new Map(
+      before.rows
+        .filter((r) => r.starts > 0)
+        .map((r) => [r.horseId, Number(r.rank.replace('=', ''))]),
+    );
+    let moved = 0;
+    for (const row of after.rows) {
+      const was = rankBefore.get(row.horseId);
+      if (was === undefined || row.starts === 0) {
+        expect(row.movement).toBeNull();
+        continue;
+      }
+      const shift = was - Number(row.rank.replace('=', ''));
+      if (shift === 0) expect(row.movement).toBeNull();
+      else {
+        moved++;
+        expect(row.movement).toEqual({
+          direction: shift > 0 ? 'up' : 'down',
+          places: Math.abs(shift),
+          spoken: `${shift > 0 ? 'up' : 'down'} ${Math.abs(shift)} place${Math.abs(shift) === 1 ? '' : 's'} since round 2`,
+        });
+        expect(row.description).toContain(row.movement!.spoken);
+      }
+    }
+    expect(moved).toBeGreaterThan(0);
+  });
+
   it('flags the followed horse', () => {
     const id = allResults[0]!.finishers[3]!.horseId;
     const row = buildStandings(

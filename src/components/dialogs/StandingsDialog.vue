@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import ColorTick from '@/components/ui/ColorTick.vue';
 import IconClose from '@/components/ui/icons/IconClose.vue';
+import MovementBadge from '@/components/ui/MovementBadge.vue';
 import ModalDialog from '@/components/ui/ModalDialog.vue';
 import { useRaceStore } from '@/stores/race';
 
@@ -70,7 +71,12 @@ const subtitle = computed(() => {
             :key="row.horseId"
             :class="{ 'is-unraced': row.starts === 0, 'is-followed': row.followed }"
           >
-            <td class="is-rank mono">{{ row.rank }}</td>
+            <td class="is-rank mono">
+              <span class="standings__rank">
+                <span>{{ row.rank }}</span>
+                <MovementBadge :movement="row.movement" />
+              </span>
+            </td>
             <th scope="row" class="is-horse">
               <span class="standings__horse">
                 <ColorTick
@@ -216,8 +222,8 @@ const subtitle = computed(() => {
 }
 
 .standings__table .is-rank {
-  width: 32px;
-  min-width: 32px;
+  width: 58px;
+  min-width: 58px;
   text-align: left;
   color: var(--muted);
   font-size: 11px;
@@ -241,7 +247,7 @@ const subtitle = computed(() => {
 }
 
 .standings__table .is-horse {
-  left: 32px;
+  left: 58px;
   width: 128px;
   min-width: 128px;
   max-width: 128px;
@@ -250,7 +256,7 @@ const subtitle = computed(() => {
 }
 
 .standings__table .is-points {
-  left: 160px;
+  left: 186px;
   box-shadow: inset -1px 0 0 var(--line);
 }
 
@@ -274,6 +280,16 @@ tbody tr.is-followed .is-points {
 
 .standings__table thead .is-points {
   font-weight: var(--label-w);
+}
+
+.standings__rank {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.standings__rank > span:first-child {
+  min-width: 26px;
 }
 
 .standings__horse {
