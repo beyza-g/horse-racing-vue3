@@ -96,7 +96,23 @@ competitive) rather than these exact figures.
 | ----------------------------------------- | ------------------------------------------------------------------------------- |
 | Distinct winners in a six-round program   | about 5 on average, never fewer than 3                                          |
 | Win rate relative to a fair share         | race fit ~1.7x, lean ~1.2x, fleshy ~0.95x, underweight ~0.3x, overweight rarely |
-| First-to-last spread in a ten-horse field | 4.6 s at 1200 m to 9 s at 2200 m (timeboard seconds)                            |
+| First-to-last spread in a ten-horse field | 4.6 s at 1200 m to 9 s at 2200 m (timeboard seconds, per distance below)        |
+
+Per distance, in timeboard time (means over the same 300 programs):
+
+| Distance | Winning time | First-to-last spread |
+| -------- | ------------ | -------------------- |
+| 1200 m   | 1:11.1       | 4.6 s                |
+| 1400 m   | 1:23.3       | 5.6 s                |
+| 1600 m   | 1:35.7       | 6.4 s                |
+| 1800 m   | 1:48.3       | 7.0 s                |
+| 2000 m   | 2:00.9       | 8.1 s                |
+| 2200 m   | 2:13.7       | 8.9 s                |
+
+Winners run about a second faster than the calibration horse in
+[Race times](#race-times) (1:12.3 at 1200 m): that table describes one
+race-fit horse at nominal pace, while each winner is the best of ten on the
+day.
 
 For comparison, the earlier linear model let one high-condition horse win all
 six rounds of a seeded program, with first-to-last spreads of more than 25 seconds.
