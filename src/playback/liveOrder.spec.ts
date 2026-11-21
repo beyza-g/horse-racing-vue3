@@ -1,16 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { createRace, SIM_STEP } from '../domain';
 import { LINEUP_1_TO_10, makeRoster, makeRound } from '../domain/__fixtures__/roster';
-import { buildLiveOrder, createPublishGate, formatOrdinal, formatRaceTime } from './liveOrder';
+import { formatOfficialTime } from '../domain';
+import { buildLiveOrder, createPublishGate, formatOrdinal } from './liveOrder';
 
 const roster = makeRoster((id) => id * 5);
-
-describe('formatRaceTime', () => {
-  it('uses two decimals and a seconds suffix', () => {
-    expect(formatRaceTime(10.745)).toBe('10.74s');
-    expect(formatRaceTime(9)).toBe('9.00s');
-  });
-});
 
 describe('formatOrdinal', () => {
   it.each([
@@ -46,12 +40,14 @@ describe('buildLiveOrder', () => {
     for (const entry of rest) expect(Number(entry.label.slice(1, -1))).toBeGreaterThanOrEqual(1);
   });
 
-  it('shows official times once runners finish', () => {
+  it('shows official timeboard times once runners finish', () => {
     const race = createRace(makeRound(LINEUP_1_TO_10), roster);
     const result = race.runToCompletion();
     const order = buildLiveOrder(race);
     expect(order.map((e) => e.horseId)).toEqual(result.finishers.map((f) => f.horseId));
-    expect(order.map((e) => e.label)).toEqual(result.finishers.map((f) => formatRaceTime(f.time)));
+    expect(order.map((e) => e.label)).toEqual(
+      result.finishers.map((f) => formatOfficialTime(f.time, race.distance)),
+    );
     expect(order.every((e) => e.finished)).toBe(true);
   });
 });

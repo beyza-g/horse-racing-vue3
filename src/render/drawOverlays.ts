@@ -1,5 +1,5 @@
-import type { Horse, HorseId, Race } from '@/domain';
-import { countdownStep, DIRECTOR_TIMING, formatRaceTime, type DirectorPhase } from '@/playback';
+import { formatOfficialTime, type Horse, type HorseId, type Race } from '@/domain';
+import { countdownStep, DIRECTOR_TIMING, type DirectorPhase } from '@/playback';
 import type { TrackGeometry } from './geometry';
 import { FONT_MONO, FONT_SANS, type TrackPalette } from './palette';
 
@@ -15,7 +15,7 @@ export interface CueLayer {
   readonly horses: ReadonlyMap<HorseId, Horse>;
 }
 
-/** A photo finish: first and second separated by less than this many seconds. */
+/** A photo finish: first and second separated by less than this many simulation seconds. */
 export const PHOTO_FINISH_MARGIN = 0.08;
 
 /** Centre-stage cues: "press start", the countdown and the winner card. */
@@ -149,7 +149,7 @@ function drawWinnerCard(
   ctx.fontStretch = 'normal';
   ctx.font = `500 12px ${FONT_MONO}`;
   ctx.fillStyle = P.muted;
-  const time = formatRaceTime(winner.finishTime);
+  const time = formatOfficialTime(winner.finishTime, cue.race.distance);
   const intermission = cue.phase === 'intermission';
   ctx.fillText(
     intermission && round < cue.roundCount ? `${time} · NEXT: ROUND ${round + 1}` : time,

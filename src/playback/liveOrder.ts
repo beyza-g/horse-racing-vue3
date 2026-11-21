@@ -1,4 +1,4 @@
-import { DomainError, gapToLeader, type HorseId, type Race } from '../domain';
+import { DomainError, formatOfficialTime, gapToLeader, type HorseId, type Race } from '../domain';
 
 /** Minimum presentation seconds between live-order publications. */
 export const LIVE_ORDER_INTERVAL = 0.25;
@@ -8,14 +8,9 @@ export interface LiveOrderEntry {
   readonly horseId: HorseId;
   /** Zero-based live rank. */
   readonly rank: number;
-  /** Official time ("10.74s") once finished, "+3m" behind the leader, or "" for the leader. */
+  /** Official timeboard time ("1:12.48") once finished, "+3m" behind the leader, or "" for the leader. */
   readonly label: string;
   readonly finished: boolean;
-}
-
-/** Formats an official time in seconds with two decimals. */
-export function formatRaceTime(seconds: number): string {
-  return `${seconds.toFixed(2)}s`;
 }
 
 /** Ordinal for a 1-based place: 1st, 2nd, 3rd, 4th, ..., 11th, 12th, 13th, 21st. */
@@ -42,7 +37,7 @@ export function buildLiveOrder(race: Race): readonly LiveOrderEntry[] {
   return standings.map((runner, rank) => {
     const finished = runner.finishTime !== null;
     let label = '';
-    if (runner.finishTime !== null) label = formatRaceTime(runner.finishTime);
+    if (runner.finishTime !== null) label = formatOfficialTime(runner.finishTime, race.distance);
     else if (rank > 0 && leader !== undefined) {
       label = `+${Math.max(1, Math.round(gapToLeader(leader, runner, race.distance)))}m`;
     }

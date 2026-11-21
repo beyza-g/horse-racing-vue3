@@ -23,7 +23,6 @@ export {
   buildLiveOrder,
   createPublishGate,
   formatOrdinal,
-  formatRaceTime,
   LIVE_ORDER_INTERVAL,
   type LiveOrderEntry,
   type PublishGate,

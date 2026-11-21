@@ -3,6 +3,7 @@ import {
   createRace,
   createRng,
   forkRng,
+  formatOfficialTime,
   generateHorses,
   generateProgram,
   indexRoster,
@@ -144,7 +145,8 @@ describe('buildBoard', () => {
     const winner = board.rows.find((r) => r.top === 0)!;
     expect(winner.horseId).toBe(allResults[0]!.finishers[0]!.horseId);
     expect(winner.emphasized).toBe(true);
-    expect(winner.time).toMatch(/^\d+\.\d{2}s$/);
+    expect(winner.time).toMatch(/^\d:\d{2}\.\d{2}$/);
+    expect(winner.time).toBe(formatOfficialTime(allResults[0]!.finishers[0]!.time, 1200));
   });
 
   it('follows the inspected round and offers a way back', () => {
@@ -198,6 +200,16 @@ describe('buildCompletedRounds', () => {
     expect(done.liveRow).toBeNull();
     expect(done.count).toBe('6 / 6');
     expect(done.rows[0]!.winnerId).toBe(allResults[0]!.finishers[0]!.horseId);
+    const seconds = (time: string) => {
+      const [m, rest] = time.split(':');
+      return Number(m) * 60 + Number(rest);
+    };
+    const winners = done.rows.map((row) => seconds(row.time));
+    expect(winners[0]).toBeGreaterThan(50);
+    expect(winners[0]).toBeLessThan(80);
+    expect(winners[5]).toBeGreaterThan(105);
+    expect(winners[5]).toBeLessThan(150);
+    for (let i = 1; i < winners.length; i++) expect(winners[i]).toBeGreaterThan(winners[i - 1]!);
   });
 });
 

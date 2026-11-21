@@ -1,4 +1,11 @@
-import { createRng, ROUND_COUNT, type Horse, type HorseId, type Rng } from '@/domain';
+import {
+  createRng,
+  ROUND_COUNT,
+  timeboardReading,
+  type Horse,
+  type HorseId,
+  type Rng,
+} from '@/domain';
 import { DIRECTOR_TIMING, observeFinish, type RaceDirector } from '@/playback';
 import { drawCue } from './drawOverlays';
 import { drawDust, drawRunners } from './drawRunners';
@@ -135,12 +142,7 @@ export function createTrackRenderer(canvas: HTMLCanvasElement): TrackRenderer {
             race.winnerTime === null &&
             race.elapsed > 0 &&
             (observation?.leaderProgress ?? 0) * race.distance > race.distance - 200,
-          clockSeconds:
-            race === null
-              ? null
-              : race.isFinished
-                ? (race.standings[race.standings.length - 1]?.finishTime ?? race.elapsed)
-                : race.elapsed,
+          clockSeconds: race === null ? null : timeboardReading(race),
           time: director.presentationTime,
         },
         light,

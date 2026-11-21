@@ -1,5 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createRng, forkRng, generateHorses, generateProgram, indexRoster } from '@/domain';
+import {
+  createRng,
+  forkRng,
+  formatTimeboard,
+  generateHorses,
+  generateProgram,
+  indexRoster,
+  timeboardReading,
+} from '@/domain';
 import { createRaceDirector, type DirectorPhase, type RaceDirector } from '@/playback';
 import { createFakeContext, type FakeContext } from '@/test/fakeCanvas';
 import { createTrackRenderer, type TrackScene } from './renderer';
@@ -73,6 +81,32 @@ describe('createTrackRenderer', () => {
     expect(fake.texts.some((t) => t.startsWith('WINNER') || t.startsWith('PHOTO'))).toBe(true);
     advanceTo(director, 'complete');
     renderer.render(scene(director, { theme }));
+  });
+
+  it('draws the race clock in timeboard time and freezes it while paused', () => {
+    const renderer = createTrackRenderer(canvas);
+    renderer.resize(1000, 500, 1);
+    const director = createRaceDirector();
+    director.load(roster, program);
+    renderer.render(scene(director));
+    expect(fake.texts).toContain('0:00.00');
+    director.togglePlayback();
+    advanceTo(director, 'running');
+    for (let i = 0; i < 240; i++) director.frame(1 / 60);
+    const clockPattern = /^\d:\d{2}\.\d{2}$/;
+    fake.texts.length = 0;
+    renderer.render(scene(director));
+    const running = fake.texts.find((t) => clockPattern.test(t));
+    expect(running).toBe(formatTimeboard(timeboardReading(director.race!)));
+    // Four simulated seconds read as roughly 24 broadcast seconds.
+    expect(timeboardReading(director.race!)).toBeGreaterThan(director.race!.elapsed * 4);
+
+    director.pause();
+    for (let i = 0; i < 120; i++) director.frame(1 / 60);
+    director.frame(30);
+    fake.texts.length = 0;
+    renderer.render(scene(director));
+    expect(fake.texts.find((t) => clockPattern.test(t))).toBe(running);
   });
 
   it('draws the PAUSED pill while paused', () => {

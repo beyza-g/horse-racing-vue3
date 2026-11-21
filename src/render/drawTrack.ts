@@ -1,3 +1,4 @@
+import { formatTimeboard } from '@/domain';
 import {
   distanceMarkers,
   labelFits,
@@ -83,16 +84,10 @@ export interface TrackHeader {
   readonly paused: boolean;
   /** Pulse "FINAL 200M" while the leader is in the last 200 m. */
   readonly finalStretch: boolean;
-  /** Race clock in seconds, or null to hide it. */
+  /** Race clock in timeboard (display) seconds, or null to hide it. */
   readonly clockSeconds: number | null;
   /** Presentation time for the pulse animation. */
   readonly time: number;
-}
-
-/** Formats a race clock as m:ss.cc. */
-export function formatClock(seconds: number): string {
-  const safe = Math.max(0, seconds);
-  return `${Math.floor(safe / 60)}:${(safe % 60).toFixed(2).padStart(5, '0')}`;
 }
 
 /**
@@ -147,7 +142,7 @@ export function drawHeader(
 
   let clockLeft = g.width;
   if (header.clockSeconds !== null) {
-    const clock = formatClock(header.clockSeconds);
+    const clock = formatTimeboard(header.clockSeconds);
     ctx.textAlign = 'right';
     ctx.font = `500 13px ${FONT_MONO}`;
     ctx.fillStyle = P.text;

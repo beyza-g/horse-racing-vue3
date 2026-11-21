@@ -24,4 +24,15 @@ export {
   type RunnerProfile,
 } from './race/physics';
 export { gapToLeader } from './race/standings';
+export {
+  formatOfficialTime,
+  formatTimeboard,
+  nominalSimDuration,
+  realisticDuration,
+  realisticPace,
+  TIMEBOARD,
+  timeboardReading,
+  timeboardScale,
+  toTimeboardSeconds,
+} from './race/timeboard';
 export type { FinishRecord, Horse, HorseId, Program, Round, RoundResult } from './types';

@@ -130,6 +130,11 @@ describe('App', () => {
       expect(dialog?.getAttribute('aria-modal')).toBe('true');
       expect(dialog?.textContent).toContain('All six rounds are official');
       expect(document.querySelectorAll('.complete__winner')).toHaveLength(6);
+      const times = [...document.querySelectorAll('.complete__time')].map((el) =>
+        el.textContent.trim(),
+      );
+      for (const time of times) expect(time).toMatch(/^\d:\d{2}\.\d{2}$/);
+      expect(times[0]! < times[5]!).toBe(true);
       expect(document.getElementById('app')?.hasAttribute('inert')).toBe(true);
       expect(w.findAll('button').some((b) => b.text().trim() === 'Start')).toBe(false);
       expect(document.activeElement?.textContent.trim()).toBe('Generate new program');

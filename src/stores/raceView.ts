@@ -4,13 +4,14 @@
  * display rules are testable without Vue or Pinia.
  */
 import {
+  formatOfficialTime,
   ROUND_DISTANCES,
   type Horse,
   type HorseId,
   type Program,
   type RoundResult,
 } from '@/domain';
-import { formatOrdinal, formatRaceTime, type DirectorPhase, type LiveOrderEntry } from '@/playback';
+import { formatOrdinal, type DirectorPhase, type LiveOrderEntry } from '@/playback';
 
 export type PillTone = 'live' | 'paused' | 'gates' | 'official';
 
@@ -194,7 +195,11 @@ export function buildBoard(s: RaceViewState): BoardView {
   const ranks = new Map<HorseId, { rank: number; label: string; finished: boolean }>();
   if (result !== undefined) {
     result.finishers.forEach((f, rank) => {
-      ranks.set(f.horseId, { rank, label: formatRaceTime(f.time), finished: true });
+      ranks.set(f.horseId, {
+        rank,
+        label: formatOfficialTime(f.time, result.distance),
+        finished: true,
+      });
     });
   } else if (liveOrder !== null) {
     for (const entry of liveOrder) ranks.set(entry.horseId, entry);
@@ -279,7 +284,7 @@ export function buildCompletedRounds(s: RaceViewState): CompletedRoundsView {
         winnerId: winner.horseId,
         winnerName: horse?.name ?? `Horse ${winner.horseId}`,
         winnerColor: horse?.color ?? 'transparent',
-        time: formatRaceTime(winner.time),
+        time: formatOfficialTime(winner.time, result.distance),
         selected: result.roundIndex === selected,
         followed: winner.horseId === s.followedHorseId,
       },

@@ -76,6 +76,7 @@ src/
       physics.ts          # SIM_STEP, PHYSICS tuning table, pace/profile strategies, pure calculators
       standings.ts        # compareLive, compareCrossings, in-place insertion sort, gapToLeader
       createRace.ts       # createRace(round, roster, options) -> Race (fixed-step simulation)
+      timeboard.ts        # Display-only time: sim seconds -> broadcast seconds per distance, m:ss.cc
     __fixtures__/         # Test-only builders (excluded from coverage and never imported by app code)
   playback/               # Pure timing controller (no Vue/DOM)
     clock.ts              # Wall dt → sim dt: clamp (tab switch), speed scale, pause
@@ -148,9 +149,10 @@ globals are disabled. Use the `@/` alias outside the pure layers; inside
 - A program has 6 rounds, in order: 1200, 1400, 1600, 1800, 2000, 2200 m.
 - Each round draws 10 distinct random horses from the 20; lane = draw order.
 - Rounds run strictly one at a time; results appear as each round becomes official.
-- Live order during a round; official finish times (sim seconds, 2 decimals)
-  once every runner has crossed. Ties broken by interpolated crossing time,
-  then by horse ID for stability.
+- Live order during a round; official finish times once every runner has
+  crossed. Results store simulation seconds; users see them as timeboard
+  times (`m:ss.cc`, about 1:00 per 1000 m). Ties broken by interpolated
+  crossing time, then by horse ID for stability.
 
 ## Domain engine contract
 
@@ -185,6 +187,20 @@ globals are disabled. Use the `@/` alias outside the pure layers; inside
   functions in `src/playback`, so the renderer only maps numbers to pixels.
 - Per-frame positions never enter reactive state. The store receives the live
   order at most every 250 ms (or immediately when a runner finishes).
+- **Three kinds of time, never mixed:**
+  - _Simulation time_ (`race.elapsed`, `finishTime`): fixed-step engine
+    seconds; decides results. A race lasts roughly 10-25 s of it.
+  - _Presentation time_ (`presentationDt`): wall time, clamped and 0 while
+    paused; drives effects (see below). At 1x, sim time ≈ presentation time,
+    so a race takes about 10-25 s on screen.
+  - _Timeboard time_ (`src/domain/race/timeboard.ts`): what spectators read.
+    `display = sim × timeboardScale(distance)`, calibrated from `PHYSICS` so a
+    nominal (condition 50) horse runs 1000 m in about 60 s, slowing with
+    distance (1200 m ≈ 1:12, 2200 m ≈ 2:15). One positive factor per round, so
+    order, ties and gaps are preserved, and the live clock always agrees with
+    the official times. Always format with `formatTimeboard` /
+    `formatOfficialTime` (`m:ss.cc`, constant width); never show raw sim
+    seconds to users.
 - **One time source.** Every time-based effect (finish slow motion, winner
   card fade-in, name-tag fade-out, countdown, intermission) advances on the
   playback clock's `presentationDt`, which is 0 while paused and clamped on
