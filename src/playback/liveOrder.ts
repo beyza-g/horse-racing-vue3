@@ -18,6 +18,23 @@ export function formatRaceTime(seconds: number): string {
   return `${seconds.toFixed(2)}s`;
 }
 
+/** Ordinal for a 1-based place: 1st, 2nd, 3rd, 4th, ..., 11th, 12th, 13th, 21st. */
+export function formatOrdinal(place: number): string {
+  const lastTwo = place % 100;
+  const last = place % 10;
+  const suffix =
+    lastTwo >= 11 && lastTwo <= 13
+      ? 'th'
+      : last === 1
+        ? 'st'
+        : last === 2
+          ? 'nd'
+          : last === 3
+            ? 'rd'
+            : 'th';
+  return `${place}${suffix}`;
+}
+
 /** Builds the live leaderboard from the race's current standings. */
 export function buildLiveOrder(race: Race): readonly LiveOrderEntry[] {
   const standings = race.standings;

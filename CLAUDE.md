@@ -87,7 +87,13 @@ src/
   render/                 # Canvas drawing (DOM types allowed, no Vue)
     geometry.ts           # Lane/x mapping + hit testing (pure, unit-tested)
     palette.ts            # Light/dark canvas palettes
-    drawTrack.ts drawHorse.ts drawOverlays.ts particles.ts
+    drawTrack.ts          # Turf, lanes, rails, header band (PAUSED pill), poles, finish line
+    drawHorse.ts          # Horse and jockey figure driven by RunnerMotion
+    drawRunners.ts        # Runners, name tags, rank badges, leader/follow markers, gates
+    drawOverlays.ts       # Press-start card, countdown, winner card
+    particles.ts          # Pooled dust particles (seeded, presentation-time aging)
+    renderer.ts           # createTrackRenderer(canvas): resize, render(scene), horseAt(y)
+  test/                   # Vitest setup (jsdom) and the recording fake 2D context
   stores/
     race.ts               # Horses, program, results, status, live order, inspect/view
     preferences.ts        # Theme (persisted), speed, focus mode, followed horse
@@ -116,7 +122,8 @@ tsconfig.node.json   tool configs
 
 Unit specs live next to their module as `*.spec.ts`. Vitest runs two projects:
 `core` (Node environment: domain, playback, render geometry) and `ui` (jsdom:
-stores, composables, components). Import test APIs from `vitest` explicitly;
+stores, composables, components, and any `*.dom.spec.ts` such as the renderer
+smoke test, which draws every phase into a recording fake 2D context). Import test APIs from `vitest` explicitly;
 globals are disabled. Use the `@/` alias outside the pure layers; inside
 `domain` and `playback`, use relative imports.
 
@@ -235,6 +242,6 @@ npm run test:e2e       # Playwright (added in M6)
 - [x] M1 — Project setup: Vite/Vue/TS/Pinia/Vitest/ESLint/Prettier, fonts, tokens, guards, CLAUDE.md
 - [x] M2 — Domain engine (`src/domain`) + exhaustive Vitest specs
 - [x] M3 — Playback controller + motion (`src/playback`) + Vitest specs (clamp, speed, pause, drift, phases, reset, stride/drive)
-- [ ] M4 — Canvas renderer (`src/render`) + geometry specs
+- [x] M4 — Canvas renderer (`src/render`) + geometry specs
 - [ ] M5 — Pinia stores + Vue components + responsive layout + keyboard shortcuts + modal focus lock (+ store/component specs)
 - [ ] M6 — Polish (transitions, a11y, zero-layout-shift audit) + Playwright E2E/visual (bonus)

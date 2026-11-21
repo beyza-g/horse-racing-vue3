@@ -22,6 +22,7 @@ export { createFixedStepAccumulator, type FixedStepAccumulator } from './fixedSt
 export {
   buildLiveOrder,
   createPublishGate,
+  formatOrdinal,
   formatRaceTime,
   LIVE_ORDER_INTERVAL,
   type LiveOrderEntry,

@@ -15,7 +15,13 @@ export default mergeConfig(
       coverage: {
         provider: 'v8',
         include: ['src/**/*.{ts,vue}'],
-        exclude: ['src/**/*.spec.ts', 'src/**/__fixtures__/**', 'src/main.ts', 'src/**/*.d.ts'],
+        exclude: [
+          'src/**/*.spec.ts',
+          'src/**/__fixtures__/**',
+          'src/test/**',
+          'src/main.ts',
+          'src/**/*.d.ts',
+        ],
       },
       projects: [
         {
@@ -24,6 +30,7 @@ export default mergeConfig(
             name: 'core',
             environment: 'node',
             include: ['src/{domain,playback,render}/**/*.spec.ts'],
+            exclude: ['src/**/*.dom.spec.ts'],
           },
         },
         {
@@ -31,7 +38,12 @@ export default mergeConfig(
           test: {
             name: 'ui',
             environment: 'jsdom',
-            include: ['src/{stores,composables,components}/**/*.spec.ts', 'src/*.spec.ts'],
+            setupFiles: ['src/test/setup.ts'],
+            include: [
+              'src/{stores,composables,components}/**/*.spec.ts',
+              'src/**/*.dom.spec.ts',
+              'src/*.spec.ts',
+            ],
           },
         },
       ],
