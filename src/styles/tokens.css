@@ -1,5 +1,5 @@
 /*
- * Design tokens, copied from the "Horse Racing" design.
+ * Design tokens for the Horse Racing UI.
  * The active theme is set with `data-theme` on <html>; dark is the default.
  * Canvas colours live in src/render/palette.ts and must stay in sync.
  */

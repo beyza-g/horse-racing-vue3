@@ -1,8 +1,8 @@
 # CLAUDE.md — Horse Racing (Vue 3)
 
-Interactive horse racing game built for the Insider One front-end case study.
-Visual source of truth: the "Horse Racing" page of the Claude Design project
-"Furlong Race Night" (latest version; older v2–v5 pages are superseded).
+Interactive six-round horse racing simulation built with Vue 3, Pinia and a
+pure, deterministic TypeScript race engine. The UX contract and design tokens
+below are the visual source of truth.
 
 ## Non-negotiable rules
 
@@ -79,7 +79,7 @@ src/
     clock.ts              # Wall dt → sim dt: clamp (tab switch), speed scale, pause
     fixedStep.ts          # Accumulator that runs the engine at a fixed SIM_STEP
     finishDrama.ts        # Slow-motion curve around the winning moment
-    motion.ts             # Stride phase, gallop amplitude, final-furlong drive (sprint) intensity
+    motion.ts             # Stride phase, gallop amplitude, final-stretch drive (sprint) intensity
     raceDirector.ts       # Phase machine: idle → ready → countdown → running →
                           # settling → intermission → … → complete; emits events
   render/                 # Canvas drawing (DOM types allowed, no Vue)
@@ -157,7 +157,7 @@ globals are disabled. Use the `@/` alias outside the pure layers; inside
   intermission 2.6 s (intermission speed capped at 2x).
 - Regenerating the program at any phase resets the director synchronously;
   no timers (`setTimeout`) are used for game flow, so nothing stale can fire.
-- Visual motion (stride phase, gallop amplitude, final-furlong drive, finish
+- Visual motion (stride phase, gallop amplitude, final-stretch drive, finish
   slow-motion, countdown progress, intermission progress) is computed by pure
   functions in `src/playback`, so the renderer only maps numbers to pixels.
 - Per-frame positions never enter reactive state. The store receives the live
