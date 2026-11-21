@@ -24,7 +24,7 @@ results fully reproducible; the end-to-end tests rely on this.
 | ------------------------- | --------------------------------------------------------------------- |
 | `npm run verify`          | ESLint, Prettier check, `vue-tsc`, English-only check, all unit tests |
 | `npm run build`           | Type-check and production build                                       |
-| `npm run test`            | Vitest unit and component tests (584)                                 |
+| `npm run test`            | Vitest unit and component tests (590)                                 |
 | `npm run test:coverage`   | The same, with V8 coverage                                            |
 | `npm run test:e2e`        | Playwright end-to-end, layout and visual tests (40) on the build      |
 | `npm run test:e2e:update` | Refresh visual baselines after an intended UI change                  |
@@ -65,7 +65,7 @@ can confirm.
 | Clean, scalable code                       | Layered architecture with enforced boundaries ([architecture](docs/architecture.md))                             |
 | Vuex or Pinia                              | Pinia setup stores                                                                                               |
 | Component-based design                     | Containers, presentational components and slot wrappers ([UI/UX](docs/ux.md#component-structure))                |
-| Bonus: unit, E2E and visual tests          | 584 Vitest tests, 40 Playwright tests including screenshot baselines ([quality](docs/quality.md))                |
+| Bonus: unit, E2E and visual tests          | 590 Vitest tests, 40 Playwright tests including screenshot baselines ([quality](docs/quality.md))                |
 
 One interpretation to note: the brief says the horse list contains "between 1
 and 20 horses" but also requires exactly 20 available horses. The game always

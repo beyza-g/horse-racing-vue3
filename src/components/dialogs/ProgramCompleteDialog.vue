@@ -1,19 +1,57 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import ColorTick from '@/components/ui/ColorTick.vue';
 import ModalDialog from '@/components/ui/ModalDialog.vue';
 import { useRaceStore } from '@/stores/race';
 
+/**
+ * The program summary. "Final standings" opens the standings table in its
+ * place; closing the standings brings this summary back (only "View track"
+ * dismisses it), with focus on the button that opened them and without
+ * replaying the first reveal.
+ */
 const race = useRaceStore();
+
+/** The staged reveal (waiting for the last winner card) only plays the first time. */
+const revealed = ref(false);
+/** True after visiting the standings, so focus returns to "Final standings". */
+const returning = ref(false);
+
+watch(
+  () => race.completionOpen,
+  (open, wasOpen) => {
+    if (wasOpen && !open) revealed.value = true;
+  },
+);
+watch(
+  () => race.phase,
+  (phase) => {
+    if (phase !== 'complete') {
+      revealed.value = false;
+      returning.value = false;
+    }
+  },
+);
+
+function openStandings(): void {
+  returning.value = true;
+  race.openStandings();
+}
 </script>
 
 <template>
-  <ModalDialog :open="race.completionOpen" labelledby="program-complete-title" reveal-delay="0.9s">
+  <ModalDialog
+    :open="race.completionOpen"
+    labelledby="program-complete-title"
+    :reveal-delay="revealed ? '0s' : '0.9s'"
+    :initial-focus="returning ? '[data-return-focus]' : ''"
+  >
     <div class="complete__intro">
       <p class="complete__eyebrow mono">PROGRAM COMPLETE</p>
       <h2 id="program-complete-title" class="complete__title">All six rounds are official</h2>
     </div>
-    <ol class="complete__winners" aria-label="Round winners">
+    <ol class="complete__winners" :class="{ 'is-revealed': revealed }" aria-label="Round winners">
       <li
         v-for="(row, index) in race.completionWinners"
         :key="row.roundIndex"
@@ -36,8 +74,12 @@ const race = useRaceStore();
       >
         Generate new program
       </AppButton>
-      <AppButton size="lg" @click="race.openStandings()">Final standings</AppButton>
-      <AppButton size="lg" @click="race.dismissCompletion()">View track</AppButton>
+      <div class="complete__secondary">
+        <AppButton class="complete__button" data-return-focus @click="openStandings()">
+          Final standings
+        </AppButton>
+        <AppButton class="complete__button" @click="race.dismissCompletion()">View track</AppButton>
+      </div>
     </div>
   </ModalDialog>
 </template>
@@ -82,6 +124,11 @@ const race = useRaceStore();
   animation: winner-in 0.7s var(--ease-spring) var(--delay) both;
 }
 
+/* Returning from the standings: the list is already known, show it at once. */
+.is-revealed .complete__winner {
+  animation: none;
+}
+
 @keyframes winner-in {
   from {
     opacity: 0;
@@ -110,11 +157,24 @@ const race = useRaceStore();
 
 .complete__actions {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 2px;
 }
 
 .complete__primary {
-  flex: 1 1 180px;
+  width: 100%;
+}
+
+/* Two equal secondary actions; they stack when the dialog is too narrow for both. */
+.complete__secondary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
+  gap: 8px;
+}
+
+.complete__button {
+  width: 100%;
+  padding: 0 12px;
 }
 </style>

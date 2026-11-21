@@ -237,6 +237,29 @@ test.describe('program completion', () => {
     await page.keyboard.press('t');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 
+    // Final standings steps in front of the summary; closing it returns there.
+    await page.mouse.move(0, 0);
+    await expect(dialog).toHaveScreenshot('completion-summary.png');
+    await dialog.getByRole('button', { name: 'Final standings' }).click();
+    const finalStandings = page.getByRole('dialog', { name: 'Standings' });
+    await expect(finalStandings).toContainText('Final standings after all six rounds');
+    await expect(
+      finalStandings.getByRole('button', { name: 'Generate new program' }),
+    ).toBeVisible();
+    await page.mouse.move(0, 0);
+    await expect(finalStandings.locator('.standings__footer')).toHaveScreenshot(
+      'final-standings-footer.png',
+    );
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Final standings' })).toBeFocused();
+    await dialog.getByRole('button', { name: 'Final standings' }).click();
+    await finalStandings
+      .locator('.standings__actions')
+      .getByRole('button', { name: 'Back to summary' })
+      .click();
+    await expect(dialog).toBeVisible();
+
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
     await expect(header(page).getByRole('status')).toContainText('Program complete');

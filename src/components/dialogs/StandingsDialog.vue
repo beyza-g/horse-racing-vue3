@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import AppButton from '@/components/ui/AppButton.vue';
 import ColorTick from '@/components/ui/ColorTick.vue';
 import IconClose from '@/components/ui/icons/IconClose.vue';
 import ModalDialog from '@/components/ui/ModalDialog.vue';
@@ -14,6 +15,8 @@ import { useRaceStore } from '@/stores/race';
  */
 const race = useRaceStore();
 const view = computed(() => race.standings);
+/** Opened from the completion summary, closing goes back to it rather than to the track. */
+const closeLabel = computed(() => (race.standingsReturnToSummary ? 'Back to summary' : 'Close'));
 const subtitle = computed(() => {
   const n = view.value.officialRounds;
   if (n === 6) return 'Final standings after all six rounds';
@@ -37,8 +40,8 @@ const subtitle = computed(() => {
       <button
         type="button"
         class="standings__close"
-        aria-label="Close standings"
-        title="Close (Esc)"
+        :aria-label="race.standingsReturnToSummary ? 'Back to summary' : 'Close standings'"
+        :title="`${closeLabel} (Esc)`"
         @click="race.closeStandings()"
       >
         <IconClose />
@@ -98,11 +101,27 @@ const subtitle = computed(() => {
         </tbody>
       </table>
     </div>
-    <p class="standings__note">
-      10-8-6-5-4-3-2-1 points for 1st to 8th. Ties go to more wins, then more seconds, and so on;
-      horses still level share a rank (=). A dot marks a round the horse is entered in but has not
-      run yet.
-    </p>
+    <div class="standings__footer">
+      <p class="standings__note">
+        10-8-6-5-4-3-2-1 points for 1st to 8th. Ties go to more wins, then more seconds, and so on;
+        horses still level share a rank (=). A dot marks a round the horse is entered in but has not
+        run yet.
+      </p>
+      <div class="standings__actions">
+        <AppButton class="standings__action" @click="race.closeStandings()">{{
+          closeLabel
+        }}</AppButton>
+        <AppButton
+          v-if="race.phase === 'complete'"
+          variant="primary"
+          class="standings__action"
+          data-action="generate"
+          @click="race.requestNewProgram()"
+        >
+          Generate new program
+        </AppButton>
+      </div>
+    </div>
   </ModalDialog>
 </template>
 
@@ -316,10 +335,40 @@ tbody tr.is-followed {
   font-weight: 400;
 }
 
+.standings__footer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .standings__note {
   margin: 0;
   font-size: 12px;
   line-height: 1.45;
   color: var(--muted);
+}
+
+/*
+ * Secondary then primary, right-aligned at equal widths. When they no longer
+ * fit side by side they wrap; wrap-reverse puts the primary action on top,
+ * matching the completion summary's hierarchy.
+ */
+.standings__actions {
+  display: flex;
+  flex-wrap: wrap-reverse;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.standings__action {
+  flex: 1 1 200px;
+  max-width: 220px;
+  padding: 0 16px;
+}
+
+@media (max-width: 520px) {
+  .standings__action {
+    max-width: none;
+  }
 }
 </style>

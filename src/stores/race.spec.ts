@@ -221,7 +221,7 @@ describe('standings dialog', () => {
     expect(race.paused).toBe(true);
   });
 
-  it('opening from the completed summary swaps dialogs; regenerating closes it', () => {
+  it('from the summary, standings step in front of it and closing returns to it', () => {
     const { race, prefs } = setup();
     prefs.setSpeed(4);
     race.generateProgram();
@@ -231,10 +231,46 @@ describe('standings dialog', () => {
     race.openStandings();
     expect(race.standingsOpen).toBe(true);
     expect(race.completionOpen).toBe(false);
+    expect(race.completionDismissed).toBe(false);
+    expect(race.standingsReturnToSummary).toBe(true);
     expect(race.standings.officialRounds).toBe(6);
+    race.closeStandings();
+    expect(race.completionOpen).toBe(true);
+  });
+
+  it('after View track, standings close back to the track', () => {
+    const { race, prefs } = setup();
+    prefs.setSpeed(4);
     race.generateProgram();
+    race.togglePlayback();
+    advanceUntil(race, atPhase(race, 'complete'));
+    race.dismissCompletion();
+    race.openStandings();
+    expect(race.standingsReturnToSummary).toBe(false);
+    race.closeStandings();
+    expect(race.completionOpen).toBe(false);
+  });
+
+  it('generating from the standings closes them and starts a new program', () => {
+    const { race, prefs } = setup();
+    prefs.setSpeed(4);
+    race.generateProgram();
+    race.togglePlayback();
+    advanceUntil(race, atPhase(race, 'complete'));
+    race.openStandings();
+    race.requestNewProgram();
+    expect(race.confirmRegenerateOpen).toBe(false);
     expect(race.standingsOpen).toBe(false);
+    expect(race.completionOpen).toBe(false);
+    expect(race.phase).toBe('ready');
     expect(race.standings.hasResults).toBe(false);
+  });
+
+  it('mid-program the standings never claim to return to a summary', () => {
+    const { race } = setup();
+    race.generateProgram();
+    race.openStandings();
+    expect(race.standingsReturnToSummary).toBe(false);
   });
 
   it('the summary waits while standings are open when the program completes', () => {

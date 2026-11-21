@@ -5,7 +5,7 @@ const FOCUSABLE =
 
 export interface FocusTrapOptions {
   /** Element to focus first; defaults to the first focusable element. */
-  readonly initialFocus?: Ref<HTMLElement | null>;
+  readonly initialFocus?: Readonly<Ref<HTMLElement | null>>;
   /** Elements made `inert` while the trap is active (the page behind a dialog). */
   readonly inertTargets?: () => readonly Element[];
 }

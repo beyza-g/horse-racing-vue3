@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, toRef } from 'vue';
+import { computed, ref, toRef } from 'vue';
 import { useFocusTrap } from '@/composables/useFocusTrap';
 
 /**
@@ -19,12 +19,20 @@ const props = withDefaults(
     revealDelay?: string;
     /** Panel width (CSS), capped by the viewport. */
     width?: string;
+    /** Selector (inside the panel) of the element focused on open; defaults to the first focusable. */
+    initialFocus?: string;
   }>(),
-  { describedby: '', inertSelector: '#app', revealDelay: '0s', width: '380px' },
+  { describedby: '', inertSelector: '#app', revealDelay: '0s', width: '380px', initialFocus: '' },
 );
 
 const panel = ref<HTMLElement | null>(null);
+const initialFocusElement = computed<HTMLElement | null>(() =>
+  props.initialFocus === ''
+    ? null
+    : (panel.value?.querySelector<HTMLElement>(props.initialFocus) ?? null),
+);
 useFocusTrap(panel, toRef(props, 'open'), {
+  initialFocus: initialFocusElement,
   inertTargets: () => {
     const target = document.querySelector(props.inertSelector);
     return target === null ? [] : [target];

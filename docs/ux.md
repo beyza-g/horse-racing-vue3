@@ -59,8 +59,15 @@ blank. On narrow screens the rounds scroll sideways inside the dialog while
 rank, horse and points stay pinned; the page itself never scrolls sideways.
 
 **Completion dialog.** After round 6, a summary of the six winners with
-**Generate new program** (the primary action), **Final standings** and
-**View track**.
+**Generate new program** as the full-width primary action and two equal
+secondary actions below it, **Final standings** and **View track** (they
+stack on very narrow screens). **Final standings** opens the standings
+table in front of the summary rather than dismissing it: the table's close
+control reads **Back to summary**, Esc does the same, and focus returns to
+**Final standings**; **Generate new program** is also offered in the
+table's footer, so the new-program path is never more than one click away.
+Only **View track** dismisses the summary, and the staged reveal plays only
+the first time it appears.
 
 ## Key decisions
 

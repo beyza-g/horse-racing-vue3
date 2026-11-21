@@ -251,15 +251,21 @@ describe('App', () => {
       expect(document.activeElement).toBe(fullTable.element);
     });
 
+    const dialogButton = (text: string) =>
+      [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find(
+        (b) => b.textContent.trim() === text,
+      )!;
+    const settle = async () => {
+      await nextTick();
+      await nextTick();
+    };
+
     it('the completion summary links to the final standings', async () => {
       const { race } = mountApp();
       race.generateProgram();
       await playToCompletion(race);
-      [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')]
-        .find((b) => b.textContent.trim() === 'Final standings')!
-        .click();
-      await nextTick();
-      await nextTick();
+      dialogButton('Final standings').click();
+      await settle();
       expect(race.completionOpen).toBe(false);
       const dialog = document.querySelector('[role="dialog"]')!;
       expect(dialog.textContent).toContain('Final standings after all six rounds');
@@ -267,6 +273,58 @@ describe('App', () => {
         Number(td.textContent),
       );
       expect(points.reduce((a, b) => a + b, 0)).toBe(234);
+      expect(dialog.querySelector('[aria-label="Back to summary"]')).not.toBeNull();
+    });
+
+    it('closing the final standings returns to the summary, focused where it left off', async () => {
+      const { race } = mountApp();
+      race.generateProgram();
+      await playToCompletion(race);
+      const firstReveal = document.querySelector<HTMLElement>('.modal-scrim')!;
+      expect(firstReveal.style.getPropertyValue('--reveal-delay')).toBe('0.9s');
+      dialogButton('Final standings').click();
+      await settle();
+      await press('Escape');
+      await settle();
+      expect(race.completionOpen).toBe(true);
+      expect(race.completionDismissed).toBe(false);
+      expect(document.querySelector('[role="dialog"]')?.textContent).toContain(
+        'All six rounds are official',
+      );
+      expect(document.activeElement?.textContent.trim()).toBe('Final standings');
+      const again = document.querySelector<HTMLElement>('.modal-scrim')!;
+      expect(again.style.getPropertyValue('--reveal-delay')).toBe('0s');
+    });
+
+    it('Back to summary and Generate new program work from the standings', async () => {
+      const { race } = mountApp();
+      race.generateProgram();
+      await playToCompletion(race);
+      dialogButton('Final standings').click();
+      await settle();
+      dialogButton('Back to summary').click();
+      await settle();
+      expect(race.completionOpen).toBe(true);
+      dialogButton('Final standings').click();
+      await settle();
+      dialogButton('Generate new program').click();
+      await settle();
+      expect(race.phase).toBe('ready');
+      expect(race.standingsOpen).toBe(false);
+      expect(race.completionOpen).toBe(false);
+    });
+
+    it('lays out the summary actions as one primary and two equal secondary buttons', async () => {
+      const { race } = mountApp();
+      race.generateProgram();
+      await playToCompletion(race);
+      const actions = document.querySelector('.complete__actions')!;
+      expect(actions.querySelector(':scope > .app-button--primary')?.textContent.trim()).toBe(
+        'Generate new program',
+      );
+      const secondary = [...actions.querySelectorAll('.complete__secondary > button')];
+      expect(secondary.map((b) => b.textContent.trim())).toEqual(['Final standings', 'View track']);
+      expect(secondary.every((b) => b.classList.contains('app-button--secondary'))).toBe(true);
     });
   });
 

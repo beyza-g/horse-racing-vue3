@@ -228,12 +228,12 @@ export const useRaceStore = defineStore('race', () => {
   /**
    * Opens the full standings table. It is a blocking dialog, so a running
    * race pauses rather than playing on unseen; closing resumes it only if
-   * opening was what paused it. From the completion summary it replaces that
-   * dialog, so only one modal is ever open.
+   * opening was what paused it. Opened from the completion summary, the
+   * summary steps aside (it is hidden, not dismissed: only "View track"
+   * dismisses it), so closing the standings returns to the summary.
    */
   function openStandings(): void {
     if (program.value === null || confirmRegenerateOpen.value || standingsOpen.value) return;
-    if (phase.value === 'complete') completionDismissed.value = true;
     resumeAfterStandings = director.pause();
     syncFromDirector();
     standingsOpen.value = true;
@@ -274,6 +274,10 @@ export const useRaceStore = defineStore('race', () => {
   );
   const discardedProgress = computed(() => describeDiscardedProgress(viewState.value));
   const standings = computed(() => buildStandings(viewState.value));
+  /** True when closing the standings returns to the completion summary. */
+  const standingsReturnToSummary = computed(
+    () => phase.value === 'complete' && !completionDismissed.value,
+  );
 
   return {
     seed,
@@ -303,6 +307,7 @@ export const useRaceStore = defineStore('race', () => {
     discardedProgress,
     standings,
     standingsOpen,
+    standingsReturnToSummary,
     initialize,
     generateProgram,
     requestNewProgram,
