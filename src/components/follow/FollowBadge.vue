@@ -25,7 +25,6 @@ const followed = computed(() => {
     <Transition name="follow-badge">
       <FollowChip
         v-if="followed"
-        :key="followed.id"
         :name="followed.name"
         :color="followed.color"
         @clear="preferences.clearFollow()"
@@ -59,23 +58,27 @@ const followed = computed(() => {
   pointer-events: auto;
 }
 
-.follow-badge-enter-active,
+.follow-badge-enter-active {
+  transition:
+    opacity 0.2s var(--ease-out),
+    transform 0.2s var(--ease-out);
+}
+
+/* Exits are a little quicker and accelerate away, so dismissal feels immediate. */
 .follow-badge-leave-active {
   transition:
-    opacity 0.18s ease,
-    transform 0.18s ease;
+    opacity 0.14s ease-in,
+    transform 0.14s ease-in;
 }
 
-.follow-badge-leave-active {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-}
-
-.follow-badge-enter-from,
-.follow-badge-leave-to {
+.follow-badge-enter-from {
   opacity: 0;
   transform: translateY(8px);
+}
+
+.follow-badge-leave-to {
+  opacity: 0;
+  transform: translateY(6px);
 }
 
 @media (prefers-reduced-motion: reduce) {
