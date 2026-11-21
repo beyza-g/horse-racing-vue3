@@ -21,6 +21,7 @@ import {
   type DirectorPhase,
   type LiveOrderEntry,
   type RaceDirector,
+  type RaceDirectorView,
 } from '@/playback';
 import { usePreferencesStore } from './preferences';
 import {
@@ -323,7 +324,7 @@ export const useRaceStore = defineStore('race', () => {
     dismissCompletion,
     openStandings,
     closeStandings,
-    /** The live director, for the renderer only. Never mutate it from components. */
-    getDirector: (): RaceDirector => director,
+    /** Read-only view of the live director, for the renderer; commands go through this store. */
+    getDirector: (): RaceDirectorView => director,
   };
 });

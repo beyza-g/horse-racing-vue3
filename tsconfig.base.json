@@ -11,6 +11,7 @@
     "noUnusedParameters": true,
     "noPropertyAccessFromIndexSignature": true,
     "useUnknownInCatchVariables": true,
+    "erasableSyntaxOnly": true,
     "composite": true,
     "noEmit": true
   }

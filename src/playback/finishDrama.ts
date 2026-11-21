@@ -1,4 +1,4 @@
-import { DomainError, type Race } from '../domain';
+import { DomainError, type RaceView } from '../domain';
 
 /** Tuning for the slow motion around the winning moment. */
 export const FINISH_DRAMA = Object.freeze({
@@ -35,7 +35,7 @@ export function slowMotionFactor(leaderProgress: number, sinceWin: number | null
 }
 
 /** Reads a {@link FinishObservation} from a race without allocating intermediate arrays. */
-export function observeFinish(race: Race): FinishObservation {
+export function observeFinish(race: RaceView): FinishObservation {
   let lead = 0;
   for (const runner of race.runners) if (runner.position > lead) lead = runner.position;
   return {

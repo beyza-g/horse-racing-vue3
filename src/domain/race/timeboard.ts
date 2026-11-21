@@ -1,6 +1,6 @@
 import { OPTIMAL_CONDITION } from '../condition';
 import { invariant } from '../errors';
-import type { Race } from './createRace';
+import type { RaceView } from './createRace';
 import { cruisingSpeed, PHYSICS } from './physics';
 
 /**
@@ -100,7 +100,7 @@ export function formatTimeboard(seconds: number): string {
  * Driven only by the race's tick count, so it stops while paused and never
  * jumps after a tab switch.
  */
-export function timeboardReading(race: Race): number {
+export function timeboardReading(race: RaceView): number {
   const last = race.standings[race.standings.length - 1];
   const simSeconds =
     race.isFinished && last !== undefined && last.finishTime !== null

@@ -11,7 +11,7 @@ components/        Vue SFCs: containers, presentational components, wrappers
    │
 stores/ ── composables/   Pinia stores + pure view models │ game loop, shortcuts, focus trap
    │
-render/            Canvas 2D drawing; reads the director, never mutates it
+render/            Canvas 2D drawing; reads the director, never mutates it (typed)
    │
 playback/          Pure timing: clock, fixed-step accumulator, slow motion, phase machine
    │
@@ -113,7 +113,11 @@ idle ─load─► ready ─start─► countdown ─2.4 s─► running ─last
 ## State management
 
 The director is a plain object owned by the race store and marked `markRaw`,
-so Vue never proxies the hot simulation state. Everything reactive is listed
+so Vue never proxies the hot simulation state. Outside the store it is only
+reachable as a `RaceDirectorView` (`getDirector()`): its state and runner
+motion, with the current race as a `RaceView`, and no commands (`frame`,
+`pause`, `load`…) or `tick`. The renderer therefore cannot advance or
+reset the game; the type system enforces what used to be a comment. Everything reactive is listed
 here, with the reason it is stored rather than derived or kept local.
 
 **Race store** (`stores/race.ts`)
@@ -187,14 +191,14 @@ follows its container with a `ResizeObserver`.
 
 ## Tooling
 
-| Concern        | Choice                                                                                                            |
-| -------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Language       | TypeScript 6 with `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` and friends; `any` is banned |
-| Lint           | ESLint `strictTypeChecked` + `eslint-plugin-vue`; disable comments require a reason; zero warnings allowed        |
-| Formatting     | Prettier                                                                                                          |
-| Unit tests     | Vitest with two projects: `core` (Node) and `ui` (jsdom)                                                          |
-| E2E            | Playwright against the production build with a fixed seed                                                         |
-| Language guard | `scripts/check-english.mjs` keeps code, tests and docs in English                                                 |
+| Concern        | Choice                                                                                                                                     |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Language       | TypeScript 6 with `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `erasableSyntaxOnly` and friends; `any` is banned    |
+| Lint           | ESLint `strictTypeChecked` + `switch-exhaustiveness-check` + `eslint-plugin-vue`; disable comments require a reason; zero warnings allowed |
+| Formatting     | Prettier                                                                                                                                   |
+| Unit tests     | Vitest with two projects: `core` (Node) and `ui` (jsdom)                                                                                   |
+| E2E            | Playwright against the production build with a fixed seed                                                                                  |
+| Language guard | `scripts/check-english.mjs` keeps code, tests and docs in English                                                                          |
 
 Styling uses CSS custom-property tokens with scoped component styles rather
 than a utility framework: the visual language is token-driven, and six icons

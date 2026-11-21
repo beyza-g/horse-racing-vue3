@@ -17,8 +17,9 @@ const TABS = [
   { id: 'roster', label: 'Roster' },
   { id: 'standings', label: 'Standings' },
 ] as const;
+type StableView = (typeof TABS)[number]['id'];
 /** Which view of the 20 horses is shown. Local UI state; both views have the same height. */
-const view = ref<string>('roster');
+const view = ref<StableView>('roster');
 </script>
 
 <template>

@@ -49,5 +49,6 @@ export {
   type PlaybackCommand,
   type RaceDirector,
   type RaceDirectorOptions,
+  type RaceDirectorView,
 } from './raceDirector';
 export { runRaceFrame, type RaceFrameOutcome, type RaceFrameParts } from './raceFrame';

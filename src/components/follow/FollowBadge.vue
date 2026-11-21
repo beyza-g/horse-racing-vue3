@@ -49,9 +49,9 @@ const followed = computed(() => {
    lower part of the Program panel, aligned with the panel's content edges. */
 @media (min-width: 1180px) {
   .follow-badge {
-    right: calc(var(--gap) + 12px);
-    bottom: calc(var(--gap) + 12px);
-    max-width: calc(272px - 24px);
+    right: calc(var(--gap) + var(--panel-pad-x));
+    bottom: calc(var(--gap) + var(--panel-pad-x));
+    max-width: calc(var(--program-col) - 2 * var(--panel-pad-x));
   }
 }
 

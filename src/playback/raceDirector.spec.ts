@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 import {
   createRace,
   createRng,
@@ -15,6 +15,7 @@ import {
   type DirectorEvent,
   type DirectorPhase,
   type RaceDirector,
+  type RaceDirectorView,
 } from './raceDirector';
 
 const FRAME = 1 / 60;
@@ -338,5 +339,20 @@ describe('frame info and motion', () => {
     expect(() => {
       createRaceDirector().setSpeed(3);
     }).toThrow(expect.objectContaining({ code: 'INVALID_ARGUMENT' }));
+  });
+});
+
+describe('RaceDirectorView', () => {
+  it('exposes state and motion but no commands, and only a read-only race', () => {
+    expectTypeOf<RaceDirectorView>().toHaveProperty('phase');
+    expectTypeOf<RaceDirectorView>().toHaveProperty('runnerMotion');
+    expectTypeOf<RaceDirectorView>().not.toHaveProperty('frame');
+    expectTypeOf<RaceDirectorView>().not.toHaveProperty('load');
+    expectTypeOf<RaceDirectorView>().not.toHaveProperty('togglePlayback');
+    expectTypeOf<RaceDirectorView>().not.toHaveProperty('resume');
+    expectTypeOf<NonNullable<RaceDirectorView['race']>>().not.toHaveProperty('tick');
+    expectTypeOf<NonNullable<RaceDirectorView['race']>>().not.toHaveProperty('runToCompletion');
+    // A full director is usable wherever the view is expected.
+    expectTypeOf<RaceDirector>().toExtend<RaceDirectorView>();
   });
 });

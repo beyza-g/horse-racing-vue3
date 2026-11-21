@@ -1,4 +1,4 @@
-import type { Horse, HorseId, Race, RunnerView } from '@/domain';
+import type { Horse, HorseId, RaceView, RunnerView } from '@/domain';
 import { formatOrdinal, type RunnerMotion } from '@/playback';
 import { drawHorse } from './drawHorse';
 import { horseScale, laneTop, noseX, type TrackGeometry } from './geometry';
@@ -10,7 +10,7 @@ const TAU = Math.PI * 2;
 const NOSE_OFFSET = 45;
 
 export interface RunnersLayer {
-  readonly race: Race;
+  readonly race: RaceView;
   readonly horses: ReadonlyMap<HorseId, Horse>;
   readonly followedHorseId: HorseId | null;
   readonly nameTags: boolean;
@@ -36,7 +36,7 @@ const medalFor = (rank: number, P: TrackPalette): string | null =>
         : null;
 
 /** Live rank (1-based) per lane index, filled into `out` without allocating. */
-function liveRanksByLane(race: Race, out: number[]): number[] {
+function liveRanksByLane(race: RaceView, out: number[]): number[] {
   race.standings.forEach((runner, index) => {
     out[runner.lane - 1] = index + 1;
   });
@@ -186,7 +186,7 @@ function drawWinnerSpotlight(
   ctx: CanvasRenderingContext2D,
   g: TrackGeometry,
   P: TrackPalette,
-  race: Race,
+  race: RaceView,
   sinceWin: number,
 ): void {
   const winner = race.standings[0];
@@ -209,7 +209,7 @@ function drawLeaderMarkers(
   ctx: CanvasRenderingContext2D,
   g: TrackGeometry,
   P: TrackPalette,
-  race: Race,
+  race: RaceView,
   followed: HorseId | null,
   followedColor: string | null,
 ): void {

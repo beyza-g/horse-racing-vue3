@@ -1,24 +1,25 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends string">
 /**
  * Compact segmented tabs following the WAI-ARIA tabs pattern: one tab stop
  * (roving tabindex), arrow keys / Home / End move between tabs and select
  * them, and each tab controls a panel whose id is `${idPrefix}-panel-${id}`.
+ * Generic over the tab ids, so `v-model` is typed as their union, not `string`.
  */
 const props = defineProps<{
-  tabs: readonly { readonly id: string; readonly label: string }[];
-  modelValue: string;
+  tabs: readonly { readonly id: T; readonly label: string }[];
+  modelValue: T;
   idPrefix: string;
   label: string;
 }>();
-const emit = defineEmits<{ 'update:modelValue': [id: string] }>();
+const emit = defineEmits<{ 'update:modelValue': [id: T] }>();
 
 function select(index: number, event: KeyboardEvent | null): void {
   const count = props.tabs.length;
   const tab = props.tabs[((index % count) + count) % count];
   if (tab === undefined) return;
   emit('update:modelValue', tab.id);
-  if (event !== null) {
-    const list = (event.currentTarget as HTMLElement).closest('[role="tablist"]');
+  if (event?.currentTarget instanceof HTMLElement) {
+    const list = event.currentTarget.closest('[role="tablist"]');
     list?.querySelector<HTMLElement>(`#${props.idPrefix}-tab-${tab.id}`)?.focus();
   }
 }

@@ -66,6 +66,10 @@ export default defineConfigWithVueTs(
       // `any` is banned. A justified exception needs an inline disable with a `-- reason`.
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/consistent-type-imports': 'error',
+      '@typescript-eslint/switch-exhaustiveness-check': [
+        'error',
+        { considerDefaultExhaustiveForUnions: true, requireDefaultForNonUnion: true },
+      ],
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
       '@eslint-community/eslint-comments/require-description': ['error', { ignore: [] }],

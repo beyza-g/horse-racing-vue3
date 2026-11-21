@@ -92,7 +92,7 @@
     /* Fixed-height grid: the badge rests inside the Program panel instead. */
     padding: var(--gap);
     min-height: 700px;
-    grid-template-columns: 232px minmax(0, 1fr) 272px;
+    grid-template-columns: var(--stable-col) minmax(0, 1fr) var(--program-col);
     grid-template-rows: minmax(0, 1fr) 336px;
     grid-template-areas: 'stable track program' 'stable results program';
   }

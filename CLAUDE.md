@@ -35,13 +35,21 @@ contract and design tokens below are the visual source of truth.
    buttons, tabular mono digits, absolutely positioned leaderboard rows.
 6. **Strict TypeScript.** `strict`, `noUncheckedIndexedAccess`,
    `exactOptionalPropertyTypes`, `noImplicitOverride`, `noImplicitReturns`,
-   `noUnused*`, `noPropertyAccessFromIndexSignature` (see `tsconfig.base.json`),
-   checked with `vue-tsc --build`. ESLint runs `strictTypeChecked`.
+   `noUnused*`, `noPropertyAccessFromIndexSignature`, `erasableSyntaxOnly`
+   (no enums, namespaces or parameter properties; see `tsconfig.base.json`),
+   checked with `vue-tsc --build`. ESLint runs `strictTypeChecked` plus
+   `switch-exhaustiveness-check`, so a new union member fails lint until
+   every switch handles it.
    - `any` is forbidden. A justified exception requires an inline
      `// eslint-disable-next-line @typescript-eslint/no-explicit-any -- <reason>`;
      disable comments without a `-- reason` fail lint.
    - Prefer `unknown` + narrowing, discriminated unions for phases/status, and
      `readonly` data in the domain. Non-null assertions are allowed only in specs.
+   - Prefer narrowing (`instanceof`, `invariant`) to `as`. The remaining
+     production casts are index reads already guarded by bounds (`pickOne`,
+     the insertion sort) and are kept for the hot loop.
+   - Reusable components are generic where the value set matters (`TabSwitch`
+     is `generic="T extends string"`), so `v-model` carries a union, not `string`.
 7. **Verification gate.** A milestone is not done until
    `npm run verify` passes (ESLint with `--max-warnings 0`, Prettier check,
    `vue-tsc --build`, English check, Vitest) and `npm run build` succeeds.
@@ -241,6 +249,9 @@ globals are disabled. Use the `@/` alias outside the pure layers; inside
 - Visual motion (stride phase, gallop amplitude, final-stretch drive, finish
   slow-motion, countdown progress, intermission progress) is computed by pure
   functions in `src/playback`, so the renderer only maps numbers to pixels.
+- The store exposes the director only as a read-only `RaceDirectorView`
+  (no commands, and its `race` is a `RaceView` without `tick`), so the
+  renderer and components cannot drive the game.
 - Per-frame positions never enter reactive state. The store receives the live
   order at most every 250 ms (or immediately when a runner finishes), and
   only the board view model reads it: it is kept out of the shared view-model

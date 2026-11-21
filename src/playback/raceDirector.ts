@@ -9,6 +9,7 @@ import {
   type Program,
   type Race,
   type RaceOptions,
+  type RaceView,
   type RoundResult,
 } from '../domain';
 import { createPlaybackClock, type PlaybackSpeed } from './clock';
@@ -133,6 +134,19 @@ export interface RaceDirector {
   frame(wallDt: number): readonly DirectorEvent[];
   /** Visual motion of the runner in 0-based lane index `laneIndex`. */
   runnerMotion(laneIndex: number): RunnerMotion | null;
+}
+
+/** The director's commands; everything else on it is read-only state. */
+type DirectorCommand =
+  'load' | 'clear' | 'togglePlayback' | 'pause' | 'resume' | 'setSpeed' | 'frame';
+
+/**
+ * Read-only view of a director: phase, timing, the current race (itself
+ * read-only) and runner motion, but no commands. The renderer and the UI
+ * receive this, so only the race store can drive the game.
+ */
+export interface RaceDirectorView extends Omit<RaceDirector, DirectorCommand | 'race'> {
+  readonly race: RaceView | null;
 }
 
 const NO_EVENTS: readonly DirectorEvent[] = Object.freeze([]);

@@ -39,7 +39,7 @@ withDefaults(
   background: var(--panel);
   border: 1px solid var(--panel-line);
   border-radius: var(--radius-lg);
-  padding: 16px 12px 10px;
+  padding: 16px var(--panel-pad-x) 10px;
   box-shadow: var(--shadow);
   transition:
     opacity 0.5s,

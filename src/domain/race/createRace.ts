@@ -73,6 +73,13 @@ export interface Race {
   runner(horseId: HorseId): RunnerView | undefined;
 }
 
+/**
+ * Read-only view of a race: state and results, without `tick` or
+ * `runToCompletion`. What renderers and view code receive, so only the
+ * director can advance a race.
+ */
+export type RaceView = Omit<Race, 'tick' | 'runToCompletion'>;
+
 class RaceSimulation implements Race {
   readonly round: Round;
   readonly distance: number;

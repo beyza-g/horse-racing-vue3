@@ -17,12 +17,11 @@ export type DomainErrorCode =
  */
 export class DomainError extends Error {
   override readonly name = 'DomainError';
+  readonly code: DomainErrorCode;
 
-  constructor(
-    readonly code: DomainErrorCode,
-    message: string,
-  ) {
+  constructor(code: DomainErrorCode, message: string) {
     super(message);
+    this.code = code;
   }
 }
 

@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createRace, HORSE_COUNT, ROUND_COUNT } from '@/domain';
-import type { DirectorPhase } from '@/playback';
+import type { DirectorPhase, RaceDirector } from '@/playback';
 import { usePreferencesStore } from './preferences';
 import { parseSeed, useRaceStore } from './race';
 
@@ -282,7 +282,8 @@ describe('standings dialog', () => {
     // The UI cannot resume behind the modal; resume via the director to reach
     // completion with the standings still open.
     race.openStandings();
-    race.getDirector().resume();
+    // Test-only: the read-only view hides commands from app code.
+    (race.getDirector() as RaceDirector).resume();
     advanceUntil(race, atPhase(race, 'complete'));
     expect(race.standingsOpen).toBe(true);
     expect(race.completionOpen).toBe(false);

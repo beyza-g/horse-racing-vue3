@@ -111,6 +111,11 @@
   --float-inset: 10px;
   --float-clearance: calc(var(--control-h) + 2 * var(--float-inset));
   --gap: 14px;
+  /* Desktop side columns and the panels' inline padding, shared by the grid
+     and by the follow badge that rests inside the Program column. */
+  --stable-col: 232px;
+  --program-col: 272px;
+  --panel-pad-x: 12px;
 
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);

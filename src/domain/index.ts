@@ -26,7 +26,13 @@ export { DomainError, type DomainErrorCode } from './errors';
 export { createHorse, generateHorses, indexRoster, silkColor } from './horses';
 export { createRound, generateProgram, type RoundInput } from './program';
 export { createRng, forkRng, type Rng } from './random';
-export { createRace, type Race, type RaceOptions, type RunnerView } from './race/createRace';
+export {
+  createRace,
+  type Race,
+  type RaceOptions,
+  type RaceView,
+  type RunnerView,
+} from './race/createRace';
 export {
   MAX_RACE_SECONDS,
   SIM_STEP,

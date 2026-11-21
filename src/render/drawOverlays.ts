@@ -1,4 +1,4 @@
-import { formatOfficialTime, type Horse, type HorseId, type Race } from '@/domain';
+import { formatOfficialTime, type Horse, type HorseId, type RaceView } from '@/domain';
 import { countdownStep, DIRECTOR_TIMING, type DirectorPhase } from '@/playback';
 import type { TrackGeometry } from './geometry';
 import { FONT_MONO, FONT_SANS, type TrackPalette } from './palette';
@@ -7,7 +7,7 @@ const easeOut = (k: number): number => 1 - Math.pow(1 - Math.min(1, Math.max(0, 
 
 export interface CueLayer {
   readonly phase: DirectorPhase;
-  readonly race: Race;
+  readonly race: RaceView;
   readonly roundIndex: number;
   readonly roundCount: number;
   readonly phaseElapsed: number;

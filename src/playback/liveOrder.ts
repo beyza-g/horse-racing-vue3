@@ -1,4 +1,10 @@
-import { DomainError, formatOfficialTime, gapToLeader, type HorseId, type Race } from '../domain';
+import {
+  DomainError,
+  formatOfficialTime,
+  gapToLeader,
+  type HorseId,
+  type RaceView,
+} from '../domain';
 
 /** Minimum presentation seconds between live-order publications. */
 export const LIVE_ORDER_INTERVAL = 0.25;
@@ -31,7 +37,7 @@ export function formatOrdinal(place: number): string {
 }
 
 /** Builds the live leaderboard from the race's current standings. */
-export function buildLiveOrder(race: Race): readonly LiveOrderEntry[] {
+export function buildLiveOrder(race: RaceView): readonly LiveOrderEntry[] {
   const standings = race.standings;
   const leader = standings[0];
   return standings.map((runner, rank) => {

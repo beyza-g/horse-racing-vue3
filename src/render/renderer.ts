@@ -6,7 +6,7 @@ import {
   type HorseId,
   type Rng,
 } from '@/domain';
-import { DIRECTOR_TIMING, observeFinish, type RaceDirector } from '@/playback';
+import { DIRECTOR_TIMING, observeFinish, type RaceDirectorView } from '@/playback';
 import { drawCue } from './drawOverlays';
 import { drawDust, drawRunners } from './drawRunners';
 import {
@@ -23,7 +23,7 @@ import { PALETTES, type Theme } from './palette';
 /** Everything the track needs to draw one frame. */
 export interface TrackScene {
   readonly theme: Theme;
-  readonly director: RaceDirector;
+  readonly director: RaceDirectorView;
   readonly horses: ReadonlyMap<HorseId, Horse>;
   readonly followedHorseId: HorseId | null;
   /** 0-based lane under the pointer, or null. Purely visual; never affects the race. */
@@ -37,9 +37,9 @@ export interface TrackRenderer {
   resize(width: number, height: number, devicePixelRatio: number): void;
   render(scene: TrackScene): void;
   /** Horse ID in the lane at CSS-pixel Y, or null (no race or outside the lanes). */
-  horseAt(y: number, director: RaceDirector): HorseId | null;
+  horseAt(y: number, director: RaceDirectorView): HorseId | null;
   /** 0-based lane at CSS-pixel Y while a race is loaded, otherwise null. */
-  laneAt(y: number, director: RaceDirector): number | null;
+  laneAt(y: number, director: RaceDirectorView): number | null;
 }
 
 const MAX_PIXEL_RATIO = 2;
