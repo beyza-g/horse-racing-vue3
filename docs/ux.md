@@ -258,8 +258,9 @@ the destructive discard: only the focused button can.
   announced without interrupting.
 - The canvas has `role="img"` with a label that describes the current state.
 - All dialogs are `aria-modal`: focus moves inside (the primary action in
-  the completion dialog, the safe action in the discard confirmation, Close
-  in the standings table), Tab
+  the completion dialog, the safe action in the discard confirmation, the
+  scrollable table region in the standings, which has no footer Close: its
+  top-right ✕, a backdrop click or Esc close it), Tab
   cycles inside, the page behind is made `inert`, and focus returns to where
   it was when they close. The confirmation is also `aria-describedby` its
   warning text.

@@ -86,13 +86,17 @@ Bands drive the UI:
 standing in for horses returning from a lay-off, poor doers and heavy horses.
 Every band appears in a typical stable.
 
-**Resulting outcomes**, measured over 300 seeded programs:
+**Resulting outcomes**, measured over 300 seeded programs (seeds 1 to 300,
+run exactly as the app runs them). `npm run measure:outcomes` reproduces
+every number in this table; the domain specs assert the qualitative shape
+(peaked curve, thin horses fade, heavy horses are slow, fields stay
+competitive) rather than these exact figures.
 
 | Measure                                   | Value                                                                           |
 | ----------------------------------------- | ------------------------------------------------------------------------------- |
 | Distinct winners in a six-round program   | about 5 on average, never fewer than 3                                          |
 | Win rate relative to a fair share         | race fit ~1.7x, lean ~1.2x, fleshy ~0.95x, underweight ~0.3x, overweight rarely |
-| First-to-last spread in a ten-horse field | 4.6 s at 1200 m to 9 s at 2200 m                                                |
+| First-to-last spread in a ten-horse field | 4.6 s at 1200 m to 9 s at 2200 m (timeboard seconds)                            |
 
 For comparison, the earlier linear model let one high-condition horse win all
 six rounds of a seeded program, with first-to-last spreads of more than 25 seconds.

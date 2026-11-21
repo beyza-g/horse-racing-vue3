@@ -9,10 +9,10 @@ explicit frame deltas, never real timers or random numbers.
 | Suite         | Runs in                    | Tests | Covers                                                                                                                                                                                                                                                       |
 | ------------- | -------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Vitest `core` | Node                       | 406   | Domain rules, condition model, physics, standings (live and program), timeboard, playback clock, slow motion, phase machine, render geometry and particles                                                                                                   |
-| Vitest `ui`   | jsdom                      | 203   | Stores and view models, keyboard resolver, focus trap, outside-click rule, tabs, components (including the floating follow badge, track lane hover, standings and movement), a renderer smoke test, an `App` integration suite (including the results panel) |
+| Vitest `ui`   | jsdom                      | 208   | Stores and view models, keyboard resolver, focus trap, outside-click rule, tabs, components (including the floating follow badge, track lane hover, standings and movement), a renderer smoke test, an `App` integration suite (including the results panel) |
 | Playwright    | Chromium, production build | 46    | Full user flows, dialogs, standings, track lane hover, responsive layout, zero layout shift (playback and following), reduced motion, visual baselines                                                                                                       |
 
-Statement coverage is 97.3% overall: 100% in `domain`, 99.3% in `playback`,
+Statement coverage is 97.5% overall: 100% in `domain`, 99.3% in `playback`,
 99.1% in `stores` and 96.6% in `render` (`npm run test:coverage`).
 
 Notable techniques:
@@ -177,6 +177,26 @@ automated test first.
     x64 Node 20 lacked the native bindings for arm64 Node 22 (and jsdom needs
     Node 22.22 or newer). An `.nvmrc` and a matching `engines` range now pin
     the runtime.
+18. **One end-to-end run failed to reach the server.** The long completion
+    test failed once with `ERR_CONNECTION_REFUSED` on `page.goto`: the
+    preview server was not reachable, not a timing fault in the test. It did
+    not reproduce in five parallel copies of that test or in the full suite
+    run twice over (92 of 92). The likely cause was port 4173, Vite's
+    default preview port: with `reuseExistingServer`, a manually started
+    `npm run preview` there would be reused, serving a stale build or
+    stopping mid-run. The suite now serves on its own port (4183), and
+    traces are kept on failure (`trace: 'retain-on-failure'`) so the next
+    failure, if any, comes with a full record.
+
+### Found in a resilience review
+
+19. **A throwing frame would have frozen the game silently.** The animation
+    loop scheduled the next frame only after the callback returned, so any
+    error escaping a frame stopped the loop with nothing on screen. The loop
+    now reports the error (once per run of failing frames, to avoid flooding
+    the console) and keeps running; `stop()` called from inside a frame is
+    also honoured. `useAnimationFrame.spec.ts` drives it with a manual frame
+    queue.
 
 ## Known limitations
 

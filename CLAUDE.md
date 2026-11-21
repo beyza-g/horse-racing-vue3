@@ -121,7 +121,7 @@ src/
     raceView.ts           # Pure view-model builders (status, board, rounds, stable, ...)
     preferences.ts        # Theme (persisted, storage failures ignored), speed, focus, follow
   composables/
-    useAnimationFrame.ts  # rAF loop yielding raw wall dt
+    useAnimationFrame.ts  # rAF loop yielding raw wall dt; a throwing frame is reported, never kills the loop
     useRaceLoop.ts        # Per frame: race.advance(dt) then renderer.render(scene); resize; hit test; lane hover
     shortcuts.ts          # Pure resolveShortcut(key, context) -> action (unit-tested)
     useKeyboardShortcuts.ts  # Window listener that dispatches resolved actions
@@ -148,9 +148,9 @@ tests/e2e/   Playwright against the production build, always with ?seed=42
   layout.spec.ts   # No horizontal overflow (320-1440 px), grid order, zero layout shift
   visual.spec.ts   # Screenshot baselines (canvas masked in layout shots; track compared separately)
   __screenshots__/ # Baselines, suffixed by platform (regenerate with npm run test:e2e:update)
-scripts/     check-english.mjs
+scripts/     check-english.mjs, measure-outcomes.mjs (reproduces the outcome stats in docs/domain.md)
 .nvmrc               Node 22
-playwright.config.ts builds, serves on :4173, Chromium project
+playwright.config.ts builds, serves on :4183 (not Vite's default preview port), Chromium project
 tsconfig.base.json   shared strict options
 tsconfig.core.json   domain + playback, no DOM lib
 tsconfig.app.json    all of src with DOM lib
@@ -205,8 +205,9 @@ globals are disabled. Use the `@/` alias outside the pure layers; inside
 - Stables are drawn with ~70% of horses around race fitness and the rest
   uniform over 1–100 (lay-offs, poor doers, heavy horses), using only
   arithmetic on the seeded `Rng` so seeds replay identically.
-- Expected outcomes (300 seeded programs): ~5 distinct winners per 6-round
-  program; race-fit horses win ~1.7× their share, overweight horses rarely.
+- Expected outcomes (seeds 1-300, `npm run measure:outcomes`): ~5 distinct
+  winners per 6-round program; race-fit horses win ~1.7× their share,
+  overweight horses rarely.
 - Research sources and the full rationale are in `docs/domain.md`.
 
 ## Domain engine contract
@@ -390,7 +391,8 @@ npm run typecheck      # vue-tsc --build
 npm run lint           # ESLint, zero warnings allowed
 npm run format         # Prettier write
 npm run check:english  # English-only guard
-npm run test:e2e       # Playwright E2E + visual (builds and serves on :4173)
+npm run measure:outcomes  # Reproduce the outcome statistics in docs/domain.md
+npm run test:e2e       # Playwright E2E + visual (builds and serves on :4183)
 npm run test:e2e:update  # Refresh visual baselines after an intended UI change
 npx playwright install chromium  # One-time browser download for E2E
 ```

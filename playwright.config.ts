@@ -1,6 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = 4173;
+/**
+ * Not Vite's default preview port (4173): with `reuseExistingServer`, a
+ * manually started `npm run preview` on that port would be reused, serving a
+ * stale build or disappearing mid-run (seen once as ERR_CONNECTION_REFUSED).
+ */
+const PORT = 4183;
 
 /**
  * End-to-end and visual tests against the production build. Every test opens

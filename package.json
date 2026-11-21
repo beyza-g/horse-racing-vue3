@@ -20,6 +20,7 @@
     "format:check": "prettier --check .",
     "verify": "npm run lint && npm run format:check && npm run typecheck && npm run check:english && npm run test",
     "check:english": "node scripts/check-english.mjs",
+    "measure:outcomes": "node scripts/measure-outcomes.mjs",
     "test:e2e": "playwright test",
     "test:e2e:update": "playwright test --update-snapshots"
   },
