@@ -45,11 +45,22 @@ round.
 **Program.** One card per round with its distance, status pill and line-up.
 The current round is highlighted and opens automatically.
 
-**Stable.** All 20 horses with number, name, lane in the current round and
-condition. Horses not running in the current round are greyed out.
+**Stable.** All 20 horses, in two views switched by tabs in the panel
+header. **Roster**: number, name, lane in the current round and condition;
+horses not running in the current round are greyed out. **Standings**:
+program points so far (10-8-6-5-4-3-2-1 for 1st to 8th), rank (shared ranks
+shown as `=5`), horses yet to race muted at the bottom, and a **Full table**
+button for every placing in every round.
+
+**Standings table.** A dialog with one row per horse: rank, horse and
+points first, then R1 to R6, each a medal pill for 1st to 3rd, the place for
+the rest, a dot for a round the horse is entered in but has not run, or
+blank. On narrow screens the rounds scroll sideways inside the dialog while
+rank, horse and points stay pinned; the page itself never scrolls sideways.
 
 **Completion dialog.** After round 6, a summary of the six winners with
-**Generate new program** (the primary action) and **View track**.
+**Generate new program** (the primary action), **Final standings** and
+**View track**.
 
 ## Key decisions
 
@@ -88,6 +99,17 @@ button, or click anything that is not a control: panel headings, empty
 panel space, the page background, or the track outside the lanes. Buttons,
 links, form fields and dialogs never clear it, so no intentional interaction
 is lost (the rule is one pure function, `isDismissClick`).
+
+**Standings live inside the Stable panel.** The question "who is having the
+best program?" spans rounds, which no other view answers. A separate block
+below the stable would not fit (the desktop stable column is nearly full,
+and the space under Completed rounds shrinks to about 70 px by round 6), so
+standings are a second view of the same 20 horses: same rows, same height,
+same footer height, so switching tabs never moves anything (asserted at
+desktop and mobile widths). The full horse-by-round grid needs room the
+column cannot give, which is what the dialog is for. Opening it mid-race
+pauses the race, because a blocking dialog should not let a race play out
+unseen.
 
 **Pointing at a lane.** With a mouse or pen over the track, the lane under
 the pointer gets a neutral, low-contrast wash with hairline edges, and the
@@ -153,6 +175,7 @@ and after Start, Pause and Resume and requires identical boxes.
 | `Enter`     | In the completion dialog: generate a new program |
 | `Esc`       | In the completion dialog: view the track         |
 | `Esc`       | In the discard confirmation: keep the program    |
+| `Esc`       | In the standings table: close it                 |
 
 Shortcuts are ignored while typing in a field and with modifier keys. Space
 on a focused button activates that button instead of toggling playback twice.
@@ -162,12 +185,19 @@ the destructive discard: only the focused button can.
 ## Accessibility
 
 - Every clickable row is a native `<button>`. Toggles expose `aria-pressed`,
-  round cards `aria-expanded`, and the theme control is a `switch`.
+  round cards `aria-expanded`, and the theme control is a `switch`. The
+  Roster and Standings views follow the WAI-ARIA tabs pattern (arrow keys,
+  Home and End, one tab stop).
+- The standings table is a real `<table>` with a caption and row and column
+  headers; each round cell has text for screen readers ("entered, not run
+  yet", "not running"), and each standings row's label reads as a sentence
+  ("rank 1, 18 points from 2 runs (1st in round 1, 2nd in round 3)").
 - The status line is an `aria-live="polite"` region, so state changes are
   announced without interrupting.
 - The canvas has `role="img"` with a label that describes the current state.
-- Both dialogs are `aria-modal`: focus moves inside (the primary action in
-  the completion dialog, the safe action in the discard confirmation), Tab
+- All dialogs are `aria-modal`: focus moves inside (the primary action in
+  the completion dialog, the safe action in the discard confirmation, Close
+  in the standings table), Tab
   cycles inside, the page behind is made `inert`, and focus returns to where
   it was when they close. The confirmation is also `aria-describedby` its
   warning text.

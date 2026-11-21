@@ -36,6 +36,13 @@ export {
 } from './race/physics';
 export { gapToLeader } from './race/standings';
 export {
+  computeProgramStandings,
+  formFigures,
+  PLACING_POINTS,
+  pointsForPlace,
+  type ProgramStanding,
+} from './programStandings';
+export {
   formatOfficialTime,
   formatTimeboard,
   nominalSimDuration,

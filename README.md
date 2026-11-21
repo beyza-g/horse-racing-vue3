@@ -24,9 +24,9 @@ results fully reproducible; the end-to-end tests rely on this.
 | ------------------------- | --------------------------------------------------------------------- |
 | `npm run verify`          | ESLint, Prettier check, `vue-tsc`, English-only check, all unit tests |
 | `npm run build`           | Type-check and production build                                       |
-| `npm run test`            | Vitest unit and component tests (552)                                 |
+| `npm run test`            | Vitest unit and component tests (584)                                 |
 | `npm run test:coverage`   | The same, with V8 coverage                                            |
-| `npm run test:e2e`        | Playwright end-to-end, layout and visual tests (36) on the build      |
+| `npm run test:e2e`        | Playwright end-to-end, layout and visual tests (40) on the build      |
 | `npm run test:e2e:update` | Refresh visual baselines after an intended UI change                  |
 
 The first E2E run needs a browser: `npx playwright install chromium`.
@@ -60,12 +60,12 @@ can confirm.
 | 20 horses, unique colours, condition 1–100 | Fixed roster with IDs 1–20, 20 distinct silk hues, condition drawn per session ([domain](docs/domain.md#horses)) |
 | Generate a six-round schedule              | **Generate Program**; rounds at 1200, 1400, 1600, 1800, 2000 and 2200 m, 10 random runners each                  |
 | Start runs one round at a time             | A pause-aware phase machine ([architecture](docs/architecture.md#the-race-director))                             |
-| Results appear as each race concludes      | Results board, completed-rounds list and the program panel                                                       |
+| Results appear as each race concludes      | Results board, completed-rounds list, program panel, and program standings across rounds                         |
 | Horses visibly move                        | Canvas 2D track with gallop, sprint and finish animation                                                         |
 | Clean, scalable code                       | Layered architecture with enforced boundaries ([architecture](docs/architecture.md))                             |
 | Vuex or Pinia                              | Pinia setup stores                                                                                               |
 | Component-based design                     | Containers, presentational components and slot wrappers ([UI/UX](docs/ux.md#component-structure))                |
-| Bonus: unit, E2E and visual tests          | 552 Vitest tests, 36 Playwright tests including screenshot baselines ([quality](docs/quality.md))                |
+| Bonus: unit, E2E and visual tests          | 584 Vitest tests, 40 Playwright tests including screenshot baselines ([quality](docs/quality.md))                |
 
 One interpretation to note: the brief says the horse list contains "between 1
 and 20 horses" but also requires exactly 20 available horses. The game always

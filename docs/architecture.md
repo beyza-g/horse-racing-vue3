@@ -134,6 +134,14 @@ are tested without Vue or Pinia. A second store holds viewer preferences:
 theme (persisted, tolerant of blocked storage), speed, focus mode and the
 followed horse.
 
+**Program standings** are a pure domain function
+(`computeProgramStandings` in `src/domain/programStandings.ts`) of the
+official results, so they are deterministic and recomputed, never stored;
+`buildStandings` turns them into rows and per-round cells for the UI. The
+standings dialog pauses a running race while open (same pause-and-remember
+rule as the regenerate confirmation), and the completion summary waits while
+it is open, so two modals never stack.
+
 **Guarded regeneration.** The director itself accepts a new program in any
 phase. The store's `requestNewProgram` adds the user-facing guard: when a
 round is underway or official results exist, it pauses the race (remembering
@@ -160,7 +168,7 @@ follows its container with a `ResizeObserver`.
 - `standingsVersion` changes only when the order or a placing changes, so the
   store skips redundant updates.
 - Stamina weakness is computed once per runner per race, not per tick.
-- Production bundle: about 156 kB of JavaScript (57 kB gzipped) and 31 kB of
+- Production bundle: about 167 kB of JavaScript (61 kB gzipped) and 38 kB of
   CSS; fonts are self-hosted, so there is no external request or font swap.
 
 ## Tooling

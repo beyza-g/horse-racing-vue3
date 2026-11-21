@@ -8,6 +8,7 @@ import StablePanel from '@/components/stable/StablePanel.vue';
 import RaceTrack from '@/components/track/RaceTrack.vue';
 import { computed } from 'vue';
 import RegenerateConfirmDialog from '@/components/dialogs/RegenerateConfirmDialog.vue';
+import StandingsDialog from '@/components/dialogs/StandingsDialog.vue';
 import type { OpenDialog, ShortcutAction } from '@/composables/shortcuts';
 import { useOutsideClick } from '@/composables/useOutsideClick';
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts';
@@ -42,6 +43,7 @@ function dispatch(action: ShortcutAction): void {
       break;
     case 'dismissDialog':
       if (race.confirmRegenerateOpen) race.cancelNewProgram();
+      else if (race.standingsOpen) race.closeStandings();
       else race.dismissCompletion();
       break;
     case 'block':
@@ -50,7 +52,13 @@ function dispatch(action: ShortcutAction): void {
 }
 
 const openDialog = computed<OpenDialog | null>(() =>
-  race.confirmRegenerateOpen ? 'confirm-regenerate' : race.completionOpen ? 'completion' : null,
+  race.confirmRegenerateOpen
+    ? 'confirm-regenerate'
+    : race.standingsOpen
+      ? 'standings'
+      : race.completionOpen
+        ? 'completion'
+        : null,
 );
 
 useKeyboardShortcuts(() => ({ dialog: openDialog.value }), dispatch);
@@ -74,4 +82,5 @@ useOutsideClick(
   </DashboardLayout>
   <ProgramCompleteDialog />
   <RegenerateConfirmDialog />
+  <StandingsDialog />
 </template>

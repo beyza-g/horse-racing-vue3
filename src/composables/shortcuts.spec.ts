@@ -66,6 +66,13 @@ describe('resolveShortcut', () => {
       expect(resolveShortcut(key({ key: k }), confirming)).toBeNull();
   });
 
+  it('closes the standings table with Escape and ignores Enter', () => {
+    const standings = { dialog: 'standings' } as const;
+    expect(resolveShortcut(key({ key: 'Escape' }), standings)).toEqual({ type: 'dismissDialog' });
+    expect(resolveShortcut(key({ key: 'Enter' }), standings)).toEqual({ type: 'block' });
+    expect(resolveShortcut(key({ key: 't' }), standings)).toBeNull();
+  });
+
   it('lets a focused dialog button handle Enter and Space natively', () => {
     expect(resolveShortcut(key({ key: 'Enter', targetTag: 'BUTTON' }), open)).toBeNull();
     expect(resolveShortcut({ ...space, targetTag: 'BUTTON' }, open)).toBeNull();

@@ -214,6 +214,62 @@ describe('App', () => {
     });
   });
 
+  describe('standings', () => {
+    it('switches the stable between roster and standings', async () => {
+      const { wrapper: w } = mountApp();
+      const tab = w.get('#stable-tab-standings');
+      await tab.trigger('click');
+      expect(tab.attributes('aria-selected')).toBe('true');
+      expect(w.get('#stable-panel-standings').isVisible()).toBe(true);
+      expect(w.get('#stable-panel-roster').isVisible()).toBe(false);
+      expect(w.findAll('.standings-list__row')).toHaveLength(20);
+      expect(w.findAll('.stable-table__row')).toHaveLength(20);
+    });
+
+    it('opens the full table, closes with Escape and restores focus', async () => {
+      const { wrapper: w, race } = mountApp();
+      race.generateProgram();
+      await nextTick();
+      await w.get('#stable-tab-standings').trigger('click');
+      const fullTable = w.get('.stable-panel__table');
+      (fullTable.element as HTMLElement).focus();
+      await fullTable.trigger('click');
+      await nextTick();
+      await nextTick();
+      const dialog = document.querySelector('[role="dialog"]')!;
+      expect(dialog.getAttribute('aria-labelledby')).toBe('standings-title');
+      expect(dialog.querySelector('caption')?.textContent).toContain(
+        'Points and placing per round',
+      );
+      expect(dialog.querySelectorAll('tbody tr')).toHaveLength(20);
+      expect(dialog.querySelectorAll('thead th[scope="col"]')).toHaveLength(9);
+      expect(dialog.querySelectorAll('tbody th[scope="row"]')).toHaveLength(20);
+      expect(document.activeElement?.getAttribute('aria-label')).toBe('Close standings');
+      await press('Escape');
+      await nextTick();
+      expect(race.standingsOpen).toBe(false);
+      expect(document.activeElement).toBe(fullTable.element);
+    });
+
+    it('the completion summary links to the final standings', async () => {
+      const { race } = mountApp();
+      race.generateProgram();
+      await playToCompletion(race);
+      [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')]
+        .find((b) => b.textContent.trim() === 'Final standings')!
+        .click();
+      await nextTick();
+      await nextTick();
+      expect(race.completionOpen).toBe(false);
+      const dialog = document.querySelector('[role="dialog"]')!;
+      expect(dialog.textContent).toContain('Final standings after all six rounds');
+      const points = [...dialog.querySelectorAll('tbody td.is-points')].map((td) =>
+        Number(td.textContent),
+      );
+      expect(points.reduce((a, b) => a + b, 0)).toBe(234);
+    });
+  });
+
   describe('dismissing the follow by clicking outside', () => {
     it('clears on a non-interactive area, keeps it on controls and while a dialog is open', async () => {
       const { wrapper: w, prefs, race } = mountApp();

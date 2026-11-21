@@ -31,6 +31,7 @@ import {
   buildProgress,
   buildRounds,
   buildStable,
+  buildStandings,
   buildStatus,
   describeDiscardedProgress,
   isGeneratePrimary,
@@ -77,6 +78,9 @@ export const useRaceStore = defineStore('race', () => {
   const expandedRound = ref<number | null>(null);
   const completionDismissed = ref(false);
   const confirmRegenerateOpen = ref(false);
+  const standingsOpen = ref(false);
+  /** True when opening the standings paused a running race, so closing resumes it. */
+  let resumeAfterStandings = false;
   /** True when opening the confirmation paused a running race, so cancelling resumes it. */
   let resumeAfterCancel = false;
 
@@ -117,6 +121,8 @@ export const useRaceStore = defineStore('race', () => {
   /** Draws a new program and resets to round 1 at the gates. Valid at any time, even mid-race. */
   function generateProgram(): void {
     confirmRegenerateOpen.value = false;
+    standingsOpen.value = false;
+    resumeAfterStandings = false;
     resumeAfterCancel = false;
     if (horses.value.length === 0) initialize();
     const next = drawProgram(horses.value, forkRng(rng));
@@ -219,6 +225,27 @@ export const useRaceStore = defineStore('race', () => {
     completionDismissed.value = true;
   }
 
+  /**
+   * Opens the full standings table. It is a blocking dialog, so a running
+   * race pauses rather than playing on unseen; closing resumes it only if
+   * opening was what paused it. From the completion summary it replaces that
+   * dialog, so only one modal is ever open.
+   */
+  function openStandings(): void {
+    if (program.value === null || confirmRegenerateOpen.value || standingsOpen.value) return;
+    if (phase.value === 'complete') completionDismissed.value = true;
+    resumeAfterStandings = director.pause();
+    syncFromDirector();
+    standingsOpen.value = true;
+  }
+
+  function closeStandings(): void {
+    standingsOpen.value = false;
+    if (resumeAfterStandings) director.resume();
+    resumeAfterStandings = false;
+    syncFromDirector();
+  }
+
   const viewState = computed<RaceViewState>(() => ({
     horses: horsesById.value,
     program: program.value,
@@ -241,8 +268,12 @@ export const useRaceStore = defineStore('race', () => {
   const rounds = computed(() => buildRounds(viewState.value));
   const stable = computed(() => buildStable(viewState.value));
   const completionWinners = computed(() => buildCompletionWinners(viewState.value));
-  const completionOpen = computed(() => phase.value === 'complete' && !completionDismissed.value);
+  // While standings are open the summary waits, so two modals never stack.
+  const completionOpen = computed(
+    () => phase.value === 'complete' && !completionDismissed.value && !standingsOpen.value,
+  );
   const discardedProgress = computed(() => describeDiscardedProgress(viewState.value));
+  const standings = computed(() => buildStandings(viewState.value));
 
   return {
     seed,
@@ -270,6 +301,8 @@ export const useRaceStore = defineStore('race', () => {
     completionOpen,
     confirmRegenerateOpen,
     discardedProgress,
+    standings,
+    standingsOpen,
     initialize,
     generateProgram,
     requestNewProgram,
@@ -280,6 +313,8 @@ export const useRaceStore = defineStore('race', () => {
     inspectRound,
     toggleRoundExpanded,
     dismissCompletion,
+    openStandings,
+    closeStandings,
     /** The live director, for the renderer only. Never mutate it from components. */
     getDirector: (): RaceDirector => director,
   };

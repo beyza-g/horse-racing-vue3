@@ -20,6 +20,7 @@ import {
   buildProgress,
   buildRounds,
   buildStable,
+  buildStandings,
   buildStatus,
   describeDiscardedProgress,
   isGeneratePrimary,
@@ -313,5 +314,50 @@ describe('buildStable', () => {
         ?.sittingOut,
     ).toBe(false);
     expect(buildStable(idle).every((r) => r.lane === '–' && !r.sittingOut)).toBe(true);
+  });
+});
+
+describe('buildStandings', () => {
+  it('lists all 20 horses with no rank before any result', () => {
+    const view = buildStandings(state());
+    expect(view.rows).toHaveLength(20);
+    expect(view.hasResults).toBe(false);
+    expect(view.rows.every((r) => r.rank === '–' && r.points === 0)).toBe(true);
+    expect(view.rounds.map((r) => r.label)).toEqual(['R1', 'R2', 'R3', 'R4', 'R5', 'R6']);
+  });
+
+  it('marks placed, entered-but-pending and absent rounds', () => {
+    const view = buildStandings(
+      state({ phase: 'running', roundIndex: 1, results: allResults.slice(0, 1) }),
+    );
+    const winnerId = allResults[0]!.finishers[0]!.horseId;
+    const winner = view.rows[0]!;
+    expect(winner).toMatchObject({ horseId: winnerId, rank: '1', points: 10, starts: 1, wins: 1 });
+    expect(winner.cells[0]).toEqual({ label: '1st', medal: 'gold', state: 'placed' });
+    for (let round = 1; round < 6; round++) {
+      const entered = program.rounds[round]!.lineup.includes(winnerId);
+      expect(winner.cells[round]!.state).toBe(entered ? 'pending' : 'absent');
+    }
+    const tenth = view.rows.find((r) => r.horseId === allResults[0]!.finishers[9]!.horseId)!;
+    expect(tenth.cells[0]).toEqual({ label: '10th', medal: null, state: 'placed' });
+    expect(tenth.form).toBe('0');
+  });
+
+  it('describes each row for screen readers and marks shared ranks', () => {
+    const view = buildStandings(state({ phase: 'complete', roundIndex: 5, results: allResults }));
+    const top = view.rows[0]!;
+    expect(top.description).toMatch(/^.+: rank (equal )?1, \d+ points? from \d runs? \(.+\)$/);
+    const ranks = view.rows.map((r) => r.rank);
+    for (const rank of ranks) expect(rank).toMatch(/^(=?\d+|–)$/);
+    expect(view.rows.reduce((sum, r) => sum + r.points, 0)).toBe(39 * 6);
+    expect(view.officialRounds).toBe(6);
+  });
+
+  it('flags the followed horse', () => {
+    const id = allResults[0]!.finishers[3]!.horseId;
+    const row = buildStandings(
+      state({ results: allResults.slice(0, 1), followedHorseId: id }),
+    ).rows.find((r) => r.horseId === id)!;
+    expect(row.followed).toBe(true);
   });
 });

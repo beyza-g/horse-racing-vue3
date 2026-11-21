@@ -36,6 +36,7 @@ const race = useRaceStore();
       >
         Generate new program
       </AppButton>
+      <AppButton size="lg" @click="race.openStandings()">Final standings</AppButton>
       <AppButton size="lg" @click="race.dismissCompletion()">View track</AppButton>
     </div>
   </ModalDialog>

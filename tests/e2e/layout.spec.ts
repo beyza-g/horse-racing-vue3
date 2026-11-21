@@ -39,6 +39,36 @@ for (const viewport of VIEWPORTS) {
   });
 }
 
+for (const viewport of [VIEWPORTS[1]!, VIEWPORTS[4]!]) {
+  test(`switching Roster and Standings never shifts layout at ${viewport.name}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await openApp(page);
+    await header(page).getByRole('button', { name: 'Generate Program' }).click();
+    const boxes = () =>
+      page.evaluate(() =>
+        ['header', 'canvas', 'aside', '.results-panel', '.stable-table, .standings-list']
+          .map((selector) => [...document.querySelectorAll(selector)])
+          .flat()
+          .filter((el) => (el as HTMLElement).offsetParent !== null)
+          .map((el) => {
+            // Page coordinates: clicking a tab may scroll it into view.
+            const r = el.getBoundingClientRect();
+            return [r.x + window.scrollX, r.y + window.scrollY, r.width, r.height]
+              .map(Math.round)
+              .join(',');
+          }),
+      );
+    const roster = await boxes();
+    await page.getByRole('tab', { name: 'Standings' }).click();
+    expect(await boxes()).toEqual(roster);
+    await page.getByRole('button', { name: 'Full table' }).click();
+    await expect(page.getByRole('dialog', { name: 'Standings' })).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+  });
+}
+
 test('desktop uses the three-column grid', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openApp(page);

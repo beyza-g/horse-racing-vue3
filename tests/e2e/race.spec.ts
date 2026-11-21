@@ -53,6 +53,30 @@ test.describe('race flow', () => {
     await expect(playbackButton(page)).toHaveText('Start');
   });
 
+  test('standings tab and full table after the first round', async ({ page }) => {
+    await openApp(page);
+    await generateAndStart(page, 4);
+    await expect(page.getByText('1 / 6')).toBeVisible({ timeout: 30_000 });
+    await page.getByRole('tab', { name: 'Standings' }).click();
+    const list = page.getByRole('list', { name: 'Program standings' });
+    await expect(list.getByRole('button')).toHaveCount(20);
+    await expect(list.getByRole('button').first()).toHaveAccessibleName(
+      /rank 1, 10 points from 1 run/,
+    );
+    await expect(page.getByText('After 1 of 6 rounds')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Full table' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Standings' });
+    await expect(dialog).toBeVisible();
+    await expect(header(page).getByRole('status')).toContainText('Paused');
+    await expect(dialog.getByRole('table')).toBeVisible();
+    await expect(dialog.getByRole('row')).toHaveCount(21);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Full table' })).toBeFocused();
+    await expect(header(page).getByRole('status')).not.toContainText('Paused');
+  });
+
   test('the track offers Start race at the gates, focused after generating', async ({ page }) => {
     await openApp(page);
     await page.getByRole('heading', { name: 'No program yet' }).waitFor();
@@ -219,6 +243,14 @@ test.describe('program completion', () => {
     await expect(page.getByText('6 / 6')).toBeVisible();
     await page.keyboard.press('Space');
     await expect(header(page).getByRole('status')).toContainText('Program complete');
+
+    await page.getByRole('tab', { name: 'Standings' }).click();
+    await page.getByRole('button', { name: 'Full table' }).click();
+    const standings = page.getByRole('dialog', { name: 'Standings' });
+    await expect(standings).toContainText('Final standings after all six rounds');
+    const points = await standings.locator('tbody td.is-points').allInnerTexts();
+    expect(points.map(Number).reduce((a, b) => a + b, 0)).toBe(234);
+    await page.keyboard.press('Escape');
 
     await generateButton(page).click();
     await expect(header(page).getByRole('status')).toContainText('At the gates');

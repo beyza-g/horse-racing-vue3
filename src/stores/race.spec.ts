@@ -185,6 +185,76 @@ describe('requestNewProgram', () => {
   });
 });
 
+describe('standings dialog', () => {
+  it('cannot open before a program exists', () => {
+    const { race } = setup();
+    race.openStandings();
+    expect(race.standingsOpen).toBe(false);
+  });
+
+  it('pauses a running race while open and resumes on close', () => {
+    const { race } = setup();
+    race.generateProgram();
+    race.togglePlayback();
+    advanceUntil(race, atPhase(race, 'running'));
+    race.openStandings();
+    expect(race.standingsOpen).toBe(true);
+    expect(race.paused).toBe(true);
+    const ticks = race.getDirector().race!.tickCount;
+    for (let i = 0; i < 120; i++) race.advance(FRAME);
+    expect(race.getDirector().race!.tickCount).toBe(ticks);
+    race.closeStandings();
+    expect(race.paused).toBe(false);
+  });
+
+  it('leaves a race the user paused paused, and does nothing at the gates', () => {
+    const { race } = setup();
+    race.generateProgram();
+    race.openStandings();
+    race.closeStandings();
+    expect(race.phase).toBe('ready');
+    race.togglePlayback();
+    advanceUntil(race, atPhase(race, 'running'));
+    race.togglePlayback();
+    race.openStandings();
+    race.closeStandings();
+    expect(race.paused).toBe(true);
+  });
+
+  it('opening from the completed summary swaps dialogs; regenerating closes it', () => {
+    const { race, prefs } = setup();
+    prefs.setSpeed(4);
+    race.generateProgram();
+    race.togglePlayback();
+    advanceUntil(race, atPhase(race, 'complete'));
+    expect(race.completionOpen).toBe(true);
+    race.openStandings();
+    expect(race.standingsOpen).toBe(true);
+    expect(race.completionOpen).toBe(false);
+    expect(race.standings.officialRounds).toBe(6);
+    race.generateProgram();
+    expect(race.standingsOpen).toBe(false);
+    expect(race.standings.hasResults).toBe(false);
+  });
+
+  it('the summary waits while standings are open when the program completes', () => {
+    const { race, prefs } = setup();
+    prefs.setSpeed(4);
+    race.generateProgram();
+    race.togglePlayback();
+    advanceUntil(race, () => race.roundIndex === 5 && race.phase === 'settling');
+    // The UI cannot resume behind the modal; resume via the director to reach
+    // completion with the standings still open.
+    race.openStandings();
+    race.getDirector().resume();
+    advanceUntil(race, atPhase(race, 'complete'));
+    expect(race.standingsOpen).toBe(true);
+    expect(race.completionOpen).toBe(false);
+    race.closeStandings();
+    expect(race.completionOpen).toBe(true);
+  });
+});
+
 describe('playing a full program', () => {
   it('publishes results in order that match the pure engine, then completes', () => {
     const { race, prefs } = setup();

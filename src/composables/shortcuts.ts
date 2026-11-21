@@ -24,7 +24,7 @@ export interface KeyInput {
 }
 
 /** Blocking dialogs; while one is open only its own keys work. */
-export type OpenDialog = 'completion' | 'confirm-regenerate';
+export type OpenDialog = 'completion' | 'confirm-regenerate' | 'standings';
 
 export interface ShortcutContext {
   readonly dialog: OpenDialog | null;

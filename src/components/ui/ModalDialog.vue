@@ -17,8 +17,10 @@ const props = withDefaults(
     inertSelector?: string;
     /** Delay before the reveal animation (e.g. to let a winner card settle). */
     revealDelay?: string;
+    /** Panel width (CSS), capped by the viewport. */
+    width?: string;
   }>(),
-  { describedby: '', inertSelector: '#app', revealDelay: '0s' },
+  { describedby: '', inertSelector: '#app', revealDelay: '0s', width: '380px' },
 );
 
 const panel = ref<HTMLElement | null>(null);
@@ -42,6 +44,7 @@ useFocusTrap(panel, toRef(props, 'open'), {
           :aria-labelledby="labelledby"
           :aria-describedby="describedby || undefined"
           tabindex="-1"
+          :style="{ width: `min(${width}, 100%)` }"
         >
           <slot />
         </div>
@@ -65,7 +68,6 @@ useFocusTrap(panel, toRef(props, 'open'), {
 }
 
 .modal-panel {
-  width: min(380px, 100%);
   max-height: calc(100vh - 40px);
   overflow: auto;
   background: var(--panel);

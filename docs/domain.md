@@ -134,6 +134,25 @@ order, ties and gaps, and the live clock always agrees with the official
 times. Results are stored in simulation seconds and only formatted for
 display (`m:ss.cc`). See [the three kinds of time](architecture.md#three-kinds-of-time).
 
+## Program standings
+
+The brief asks for results per race. Because a horse can run in several of
+the six rounds, the game also keeps standings across the program, scored
+the way multi-race jockey challenges usually are:
+
+| Place  | 1st | 2nd | 3rd | 4th | 5th | 6th | 7th | 8th | 9th | 10th |
+| ------ | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---- |
+| Points | 10  | 8   | 6   | 5   | 4   | 3   | 2   | 1   | 0   | 0    |
+
+Every official round therefore hands out 39 points. Horses level on points
+are separated by countback (more wins, then more seconds, and so on down the
+placings); horses still level share a rank. Form figures follow the racing
+convention (one character per run, oldest first, `0` for 10th). The table is
+a pure function of the official results (`src/domain/programStandings.ts`),
+so it is fully deterministic. Note that a horse drawn into more rounds has
+more chances to score; that is inherent to the brief's random draw and is
+part of the fun, not a fairness rule.
+
 ## Deliberate simplifications
 
 These are scope decisions, not oversights:
