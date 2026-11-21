@@ -12,13 +12,14 @@ const TAU = Math.PI * 2;
 const STRIPE_WIDTH = 44;
 const FINISH_SQUARE = 4;
 
-/** Turf, lighting, lanes, the followed-lane highlight and the rails. */
+/** Turf, lighting, lanes, the hovered- and followed-lane highlights and the rails. */
 export function drawTrackBase(
   ctx: CanvasRenderingContext2D,
   g: TrackGeometry,
   P: TrackPalette,
   grain: CanvasPattern | null,
   followedLane: number | null,
+  hoveredLane: number | null = null,
 ): void {
   const { width: W, height: H } = g;
   ctx.fillStyle = P.turf;
@@ -61,6 +62,16 @@ export function drawTrackBase(
       ctx.fillStyle = P.laneLine;
       ctx.fillRect(0, y, W, 1);
     }
+  }
+  if (hoveredLane !== null && hoveredLane !== followedLane && hoveredLane < g.laneCount) {
+    // Neutral, low-contrast wash with hairline edges: shows where the pointer
+    // is without competing with the runners or the followed (accent) lane.
+    const y = laneTop(g, hoveredLane);
+    ctx.fillStyle = P.hoverLane;
+    ctx.fillRect(0, y, W, g.laneHeight);
+    ctx.fillStyle = P.hoverLaneEdge;
+    ctx.fillRect(0, y, W, 1);
+    ctx.fillRect(0, y + g.laneHeight - 1, W, 1);
   }
   if (followedLane !== null) {
     const y = laneTop(g, followedLane);

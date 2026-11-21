@@ -41,6 +41,19 @@ test.describe('visual', () => {
     await layoutShot(page, 'mobile-empty.png');
   });
 
+  test('track canvas with a hovered lane next to the followed lane', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openApp(page);
+    await generateButton(page).click();
+    const canvas = page.locator('canvas');
+    const box = (await canvas.boundingBox())!;
+    const laneHeight = (box.height - 46 - 16) / 10;
+    await canvas.click({ position: { x: 24, y: 46 + laneHeight * 4.5 } });
+    await canvas.hover({ position: { x: 24, y: 46 + laneHeight * 6.5 } });
+    await expect(canvas).toHaveAttribute('data-hovered-lane', '6');
+    await expect(canvas).toHaveScreenshot('track-hover.png', { maxDiffPixelRatio: 0.02 });
+  });
+
   test('track canvas at the gates', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await openApp(page);

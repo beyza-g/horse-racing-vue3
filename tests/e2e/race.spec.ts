@@ -65,6 +65,36 @@ test.describe('race flow', () => {
     await expect(start).toBeHidden();
   });
 
+  test('hovering a track lane highlights it without changing the race', async ({ page }) => {
+    await openApp(page);
+    await generateButton(page).click();
+    const canvas = page.locator('canvas');
+    const box = (await canvas.boundingBox())!;
+    // Lane 3 (0-based 2): header band 46 px, ten lanes below it; x near the
+    // left edge stays clear of the horses and of the Start race card.
+    const laneHeight = (box.height - 46 - 16) / 10;
+    const point = { x: 24, y: 46 + laneHeight * 2.5 };
+    const brightness = () =>
+      canvas.evaluate((el: HTMLCanvasElement, p) => {
+        const [r, g, b] = el.getContext('2d')!.getImageData(p.x, p.y, 1, 1).data;
+        return r! + g! + b!;
+      }, point);
+
+    const before = await brightness();
+    await canvas.hover({ position: point });
+    await expect(canvas).toHaveAttribute('data-hovered-lane', '2');
+    await expect(canvas).toHaveCSS('cursor', 'pointer');
+    await expect.poll(brightness).toBeGreaterThan(before);
+
+    await page.mouse.move(box.x + box.width / 2, box.y - 30);
+    await expect(canvas).not.toHaveAttribute('data-hovered-lane', /.*/);
+    await expect.poll(brightness).toBe(before);
+    await expect(header(page).getByRole('status')).toContainText('At the gates');
+
+    await canvas.click({ position: point });
+    await expect(page.getByText('Following')).toBeVisible();
+  });
+
   test('clicking outside controls stops following', async ({ page }) => {
     await openApp(page);
     await page.locator('.stable-table__row').nth(2).click();

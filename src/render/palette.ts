@@ -27,6 +27,9 @@ export interface TrackPalette {
   readonly startLine: string;
   readonly dust: readonly [string, string];
   readonly followLane: string;
+  /** Pointer hover on a lane: a neutral wash, never the accent used for following. */
+  readonly hoverLane: string;
+  readonly hoverLaneEdge: string;
   readonly followGuide: string;
   readonly dimAlpha: number;
   readonly scrim: string;
@@ -66,6 +69,8 @@ export const PALETTES: Readonly<Record<Theme, TrackPalette>> = Object.freeze({
     startLine: 'rgba(236,234,227,0.4)',
     dust: ['#2f5a37', '#6a5838'],
     followLane: 'rgba(242,181,68,0.12)',
+    hoverLane: 'rgba(236,234,227,0.06)',
+    hoverLaneEdge: 'rgba(236,234,227,0.22)',
     followGuide: 'rgba(236,234,227,0.3)',
     dimAlpha: 0.3,
     scrim: 'rgba(6,10,8,0.55)',
@@ -103,6 +108,8 @@ export const PALETTES: Readonly<Record<Theme, TrackPalette>> = Object.freeze({
     startLine: 'rgba(255,255,255,0.8)',
     dust: ['#3a7337', '#86704a'],
     followLane: 'rgba(255,240,200,0.28)',
+    hoverLane: 'rgba(255,255,255,0.14)',
+    hoverLaneEdge: 'rgba(255,255,255,0.55)',
     followGuide: 'rgba(255,255,255,0.55)',
     dimAlpha: 0.42,
     scrim: 'rgba(250,249,246,0.5)',

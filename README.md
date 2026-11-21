@@ -24,9 +24,9 @@ results fully reproducible; the end-to-end tests rely on this.
 | ------------------------- | --------------------------------------------------------------------- |
 | `npm run verify`          | ESLint, Prettier check, `vue-tsc`, English-only check, all unit tests |
 | `npm run build`           | Type-check and production build                                       |
-| `npm run test`            | Vitest unit and component tests (543)                                 |
+| `npm run test`            | Vitest unit and component tests (552)                                 |
 | `npm run test:coverage`   | The same, with V8 coverage                                            |
-| `npm run test:e2e`        | Playwright end-to-end, layout and visual tests (34) on the build      |
+| `npm run test:e2e`        | Playwright end-to-end, layout and visual tests (36) on the build      |
 | `npm run test:e2e:update` | Refresh visual baselines after an intended UI change                  |
 
 The first E2E run needs a browser: `npx playwright install chromium`.
@@ -65,7 +65,7 @@ can confirm.
 | Clean, scalable code                       | Layered architecture with enforced boundaries ([architecture](docs/architecture.md))                             |
 | Vuex or Pinia                              | Pinia setup stores                                                                                               |
 | Component-based design                     | Containers, presentational components and slot wrappers ([UI/UX](docs/ux.md#component-structure))                |
-| Bonus: unit, E2E and visual tests          | 543 Vitest tests, 34 Playwright tests including screenshot baselines ([quality](docs/quality.md))                |
+| Bonus: unit, E2E and visual tests          | 552 Vitest tests, 36 Playwright tests including screenshot baselines ([quality](docs/quality.md))                |
 
 One interpretation to note: the brief says the horse list contains "between 1
 and 20 horses" but also requires exactly 20 available horses. The game always

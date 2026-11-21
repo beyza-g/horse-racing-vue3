@@ -26,6 +26,8 @@ export interface TrackScene {
   readonly director: RaceDirector;
   readonly horses: ReadonlyMap<HorseId, Horse>;
   readonly followedHorseId: HorseId | null;
+  /** 0-based lane under the pointer, or null. Purely visual; never affects the race. */
+  readonly hoveredLane: number | null;
   readonly nameTags: boolean;
   readonly finishDrama: boolean;
 }
@@ -36,6 +38,8 @@ export interface TrackRenderer {
   render(scene: TrackScene): void;
   /** Horse ID in the lane at CSS-pixel Y, or null (no race or outside the lanes). */
   horseAt(y: number, director: RaceDirector): HorseId | null;
+  /** 0-based lane at CSS-pixel Y while a race is loaded, otherwise null. */
+  laneAt(y: number, director: RaceDirector): number | null;
 }
 
 const MAX_PIXEL_RATIO = 2;
@@ -93,6 +97,10 @@ export function createTrackRenderer(canvas: HTMLCanvasElement): TrackRenderer {
       geometry = computeGeometry(width, height);
     },
 
+    laneAt(y, director) {
+      return director.race === null ? null : laneAtY(geometry, y);
+    },
+
     horseAt(y, director) {
       const race = director.race;
       if (race === null) return null;
@@ -123,6 +131,7 @@ export function createTrackRenderer(canvas: HTMLCanvasElement): TrackRenderer {
         P,
         grainFor(scene.theme),
         followedRunner ? followedRunner.lane - 1 : null,
+        race === null ? null : scene.hoveredLane,
       );
 
       const observation = race === null ? null : observeFinish(race);

@@ -89,6 +89,15 @@ panel space, the page background, or the track outside the lanes. Buttons,
 links, form fields and dialogs never clear it, so no intentional interaction
 is lost (the rule is one pure function, `isDismissClick`).
 
+**Pointing at a lane.** With a mouse or pen over the track, the lane under
+the pointer gets a neutral, low-contrast wash with hairline edges, and the
+cursor becomes a pointer only over lanes, so it is clear which horse a click
+will follow. The wash is deliberately not the accent colour: the followed
+lane keeps its amber highlight, and hovering it adds nothing on top. Touch
+has no hover, so taps never leave a stale highlight. The hovered lane is
+local UI state in the track's loop composable, redrawn by the canvas; it
+never reaches the stores or the race.
+
 **Hover is not selection.** Hovering a runner row shows a soft wash only
 (`--row-hover`); the followed row keeps the accent fill and ring, and
 hovering it simply deepens the fill. The two states can never be confused.

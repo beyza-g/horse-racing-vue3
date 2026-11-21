@@ -10,7 +10,7 @@ import ReadyCard from './ReadyCard.vue';
 const race = useRaceStore();
 const preferences = usePreferencesStore();
 const canvas = ref<HTMLCanvasElement | null>(null);
-const { horseAtClientY } = useRaceLoop(canvas);
+const { horseAtClientY, hoveredLane, pointerMove, pointerLeave } = useRaceLoop(canvas);
 
 const label = computed(() =>
   race.hasProgram
@@ -31,10 +31,13 @@ function onCanvasClick(event: MouseEvent): void {
     <canvas
       ref="canvas"
       class="race-track__canvas"
-      :class="{ 'is-clickable': race.hasProgram }"
+      :class="{ 'is-clickable': hoveredLane !== null }"
+      :data-hovered-lane="hoveredLane ?? undefined"
       role="img"
       :aria-label="label"
       @click="onCanvasClick"
+      @pointermove="pointerMove"
+      @pointerleave="pointerLeave"
     />
     <EmptyProgramCard v-if="!race.hasProgram" @generate="race.requestNewProgram()" />
     <ReadyCard

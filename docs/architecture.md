@@ -125,7 +125,9 @@ the UI needs:
 | Regenerate confirmation open  | When Generate would discard progress                     |
 
 Per-frame positions never enter reactive state; the renderer reads them from
-the director directly. Derived displays come from **pure view-model builders**
+the director directly. Purely visual pointer state, such as which track lane
+is hovered, stays local to the track's loop composable and is passed to the
+renderer in the scene; it is not game state, so it never enters a store. Derived displays come from **pure view-model builders**
 in `stores/raceView.ts` (status line, board rows, program cards, stable rows,
 condition badges, medals, and whether regenerating needs confirmation), which
 are tested without Vue or Pinia. A second store holds viewer preferences:

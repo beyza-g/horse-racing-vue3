@@ -10,6 +10,8 @@ import {
 } from '@/domain';
 import { createRaceDirector, type DirectorPhase, type RaceDirector } from '@/playback';
 import { createFakeContext, type FakeContext } from '@/test/fakeCanvas';
+import { computeGeometry, laneTop } from './geometry';
+import { PALETTES } from './palette';
 import { createTrackRenderer, type TrackScene } from './renderer';
 
 const rng = createRng(3);
@@ -31,6 +33,7 @@ const scene = (director: RaceDirector, patch: Partial<TrackScene> = {}): TrackSc
   director,
   horses,
   followedHorseId: null,
+  hoveredLane: null,
   nameTags: true,
   finishDrama: true,
   ...patch,
@@ -121,6 +124,66 @@ describe('createTrackRenderer', () => {
     director.pause();
     renderer.render(scene(director));
     expect(fake.texts).toContain('PAUSED');
+  });
+
+  describe('lane hover', () => {
+    const W = 1000;
+    const H = 516;
+    const g = computeGeometry(W, H);
+    /** Full-width fills in a palette colour (poles share some colours but are 1 px wide). */
+    const laneFills = (style: string) =>
+      fake.fills.filter((f) => f.style === style && f.width === W);
+    const hoverFills = (theme: 'dark' | 'light') => laneFills(PALETTES[theme].hoverLane);
+
+    function loaded() {
+      const renderer = createTrackRenderer(canvas);
+      renderer.resize(W, H, 1);
+      const director = createRaceDirector();
+      director.load(roster, program);
+      return { renderer, director };
+    }
+
+    it.each(['dark', 'light'] as const)(
+      'washes exactly the hovered lane in the %s theme, with hairline edges',
+      (theme) => {
+        const { renderer, director } = loaded();
+        renderer.render(scene(director, { theme, hoveredLane: 3 }));
+        expect(hoverFills(theme)).toEqual([
+          {
+            style: PALETTES[theme].hoverLane,
+            x: 0,
+            y: laneTop(g, 3),
+            width: W,
+            height: g.laneHeight,
+          },
+        ]);
+        const edges = laneFills(PALETTES[theme].hoverLaneEdge);
+        expect(edges.map((f) => f.y)).toEqual([laneTop(g, 3), laneTop(g, 3) + g.laneHeight - 1]);
+      },
+    );
+
+    it('draws nothing extra on the followed lane, which keeps its accent highlight', () => {
+      const { renderer, director } = loaded();
+      const followed = program.rounds[0]!.lineup[3]!;
+      renderer.render(scene(director, { hoveredLane: 3, followedHorseId: followed }));
+      expect(hoverFills('dark')).toEqual([]);
+      expect(fake.fills.some((f) => f.style === PALETTES.dark.followLane)).toBe(true);
+    });
+
+    it('draws nothing without a hovered lane or without a race', () => {
+      const { renderer, director } = loaded();
+      renderer.render(scene(director));
+      expect(hoverFills('dark')).toEqual([]);
+      renderer.render(scene(createRaceDirector(), { hoveredLane: 2 }));
+      expect(hoverFills('dark')).toEqual([]);
+    });
+
+    it('maps pointer Y to a lane only while a race is loaded', () => {
+      const { renderer, director } = loaded();
+      expect(renderer.laneAt(laneTop(g, 7) + 2, director)).toBe(7);
+      expect(renderer.laneAt(10, director)).toBeNull();
+      expect(renderer.laneAt(laneTop(g, 7) + 2, createRaceDirector())).toBeNull();
+    });
   });
 
   it('hit-tests lanes to horse IDs only when a race exists', () => {

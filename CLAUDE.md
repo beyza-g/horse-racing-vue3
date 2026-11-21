@@ -120,7 +120,7 @@ src/
     preferences.ts        # Theme (persisted, storage failures ignored), speed, focus, follow
   composables/
     useAnimationFrame.ts  # rAF loop yielding raw wall dt
-    useRaceLoop.ts        # Per frame: race.advance(dt) then renderer.render(scene); resize; hit test
+    useRaceLoop.ts        # Per frame: race.advance(dt) then renderer.render(scene); resize; hit test; lane hover
     shortcuts.ts          # Pure resolveShortcut(key, context) -> action (unit-tested)
     useKeyboardShortcuts.ts  # Window listener that dispatches resolved actions
     useFocusTrap.ts       # Dialog focus trap, background `inert`, focus restore
@@ -326,7 +326,11 @@ globals are disabled. Use the `@/` alias outside the pure layers; inside
 - Follow a horse by clicking the track lane, stable, program or leaderboard row;
   Esc clears follow, then focus; clicking outside controls clears follow.
 - Hover on rows is a background wash only (`--row-hover`); the followed row
-  keeps the accent fill and ring. Horses sitting out the round use one
+  keeps the accent fill and ring. On the track, the lane under a mouse or pen
+  pointer gets a neutral wash with hairline edges (`hoverLane` /
+  `hoverLaneEdge` in the canvas palette), nothing extra on the followed lane,
+  and the pointer cursor appears only over lanes. Hovered lane is local state
+  in `useRaceLoop` (scene field `hoveredLane`), never in a store. Horses sitting out the round use one
   inactive treatment (`--inactive-fg` / `--inactive-bg`), never filters.
 - Keyboard: Space start/pause, F focus, T theme, 1/2/4 speed, Esc, Enter in modal.
 - Breakpoints: desktop ≥ 1180 px (3-column grid), tablet ≥ 760 px, mobile below.
