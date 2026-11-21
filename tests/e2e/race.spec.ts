@@ -75,9 +75,18 @@ test.describe('race flow', () => {
     await expect(header(page).getByRole('status')).toContainText('Paused');
     await expect(dialog.getByRole('table')).toBeVisible();
     await expect(dialog.getByRole('row')).toHaveCount(21);
+    // A viewer: a corner close and no footer action mid-program; focus starts on the table.
+    await expect(dialog.getByRole('button')).toHaveCount(1);
+    await expect(dialog.getByRole('button', { name: 'Close standings' })).toBeVisible();
+    await expect(dialog.getByRole('region', { name: 'Standings table' })).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
     await expect(page.getByRole('button', { name: 'Full table' })).toBeFocused();
+    // A click on the backdrop closes it too.
+    await page.getByRole('button', { name: 'Full table' }).click();
+    await expect(dialog).toBeVisible();
+    await page.mouse.click(4, 4);
+    await expect(dialog).toBeHidden();
     await expect(header(page).getByRole('status')).not.toContainText('Paused');
   });
 
@@ -244,6 +253,9 @@ test.describe('program completion', () => {
     // Final standings steps in front of the summary; closing it returns there.
     await page.mouse.move(0, 0);
     await expect(dialog).toHaveScreenshot('completion-summary.png');
+    // The summary is a decision: a backdrop click leaves it open.
+    await page.mouse.click(4, 4);
+    await expect(dialog).toBeVisible();
     await dialog.getByRole('button', { name: 'Final standings' }).click();
     const finalStandings = page.getByRole('dialog', { name: 'Standings' });
     await expect(finalStandings).toContainText('Final standings after all six rounds');
@@ -251,19 +263,18 @@ test.describe('program completion', () => {
       finalStandings.getByRole('button', { name: 'Generate new program' }),
     ).toBeVisible();
     await page.mouse.move(0, 0);
-    await expect(finalStandings.locator('.standings__footer')).toHaveScreenshot(
-      'final-standings-footer.png',
+    await expect(finalStandings.locator('.standings__actions')).toHaveScreenshot(
+      'final-standings-actions.png',
     );
     await page.keyboard.press('Escape');
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Final standings' })).toBeFocused();
     await dialog.getByRole('button', { name: 'Final standings' }).click();
-    await expect(finalStandings.locator('.standings__back')).toBeVisible();
-    await expect(finalStandings.locator('.standings__close')).toHaveCount(0);
-    await finalStandings
-      .locator('.standings__actions')
-      .getByRole('button', { name: 'Back to summary' })
-      .click();
+    await expect(finalStandings.getByRole('button')).toHaveCount(2);
+    await expect(finalStandings.locator('.standings__actions').getByRole('button')).toHaveText([
+      'Generate new program',
+    ]);
+    await finalStandings.getByRole('button', { name: 'Back to summary' }).click();
     await expect(dialog).toBeVisible();
 
     await page.keyboard.press('Escape');
@@ -277,13 +288,13 @@ test.describe('program completion', () => {
     await page.getByRole('button', { name: 'Full table' }).click();
     const standings = page.getByRole('dialog', { name: 'Standings' });
     await expect(standings).toContainText('Final standings after all six rounds');
-    // After View track, the header control closes (back to the track), not "Summary".
+    // After View track, the corner control closes back to the track.
     await expect(standings.getByRole('button', { name: 'Close standings' })).toBeVisible();
     const points = await standings.locator('tbody td.is-points').allInnerTexts();
     expect(points.map(Number).reduce((a, b) => a + b, 0)).toBe(234);
 
     // Enter starts a new program from the final standings, as from the summary.
-    await standings.locator('.standings__note').click();
+    await expect(standings.getByRole('region', { name: 'Standings table' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(standings).toBeHidden();
     await expect(header(page).getByRole('status')).toContainText('At the gates');

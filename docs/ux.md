@@ -2,6 +2,9 @@
 
 ![Round 2 in progress on desktop in the dark theme, following one horse](images/desktop-dark-following.png)
 
+Everything described here can be tried in the
+[live demo](https://horse-racing-vue3.vercel.app/).
+
 ## Layout
 
 The page is one dashboard with four areas, arranged by viewport width using
@@ -50,8 +53,13 @@ header. **Roster**: number, name, lane in the current round and condition;
 horses not running in the current round are greyed out. **Standings**:
 program points so far (10-8-6-5-4-3-2-1 for 1st to 8th), rank (shared ranks
 shown as `=5`), the movement caused by the latest round (`▲2`, `▼1`), horses
-yet to race muted at the bottom, and a **Full table** button for every
-placing in every round.
+yet to race muted at the bottom. Its footer holds one line of context
+("After 2 of 6 rounds") and a **Full table** button for every placing in
+every round. The scoring rule is not repeated there: it is explained in the
+dialog, next to the placings it applies to. The button is tonal (a filled
+neutral surface with a trailing chevron and `aria-haspopup="dialog"`), so
+it reads as clickable in both themes without competing with the amber
+primary actions.
 
 **Standings table.** A dialog with one row per horse: rank, horse and
 points first, then R1 to R6, each a medal pill for 1st to 3rd, the place for
@@ -63,17 +71,29 @@ rank, horse and points stay pinned; the page itself never scrolls sideways.
 **Generate new program** as the full-width primary action and two equal
 secondary actions below it, **Final standings** and **View track** (they
 stack on very narrow screens). **Final standings** opens the standings
-table in front of the summary rather than dismissing it. Navigation sits at
-the top-left as a **‹ Summary** back button (not an ✕, which would suggest
-closing everything); the footer repeats **Back to summary** beside the
-primary **Generate new program**, so both paths stay in reach after
-scrolling the table. Esc goes back, Enter starts a new program (as in the
-summary; nothing is lost once the program is complete), and focus returns
-to **Final standings**. Opened from the Stable tab after **View track**, the
-table shows a plain ✕ and **Close** instead, since closing returns to the
-track it was opened from.
-Only **View track** dismisses the summary, and the staged reveal plays only
-the first time it appears.
+table in front of the summary rather than dismissing it; its ✕ ("Back to
+summary"), a backdrop click or Esc go back, with focus returned to **Final
+standings**. Its footer holds the primary **Generate new program**, and
+Enter starts a new program too (as in the summary; nothing is lost once the
+program is complete). Only **View track** dismisses the summary, and the
+staged reveal plays only the first time it appears.
+
+**Two kinds of dialog, two dismissal rules.** _Decision_ dialogs (the
+completion summary and the discard confirmation) ask for an explicit
+choice: every action is a labelled footer button, there is no ✕, and a
+backdrop click does nothing, so a stray click never discards a program or
+the summary. The _viewer_ (the standings table) is read-only and quick to
+leave: a top-right ✕, a click on the backdrop and Esc all close it, back to
+wherever it was opened from (the track, or the summary it is stacked on;
+the ✕'s label says which). Its footer is kept for the forward action only,
+**Generate new program** once the program is complete, so there is exactly
+one control per intent (an earlier version also had a footer "Close" or
+"Back to summary" and a "‹ Summary" pill). A backdrop click counts only
+when the press also started on the backdrop, so dragging a text selection
+out of the table never closes it. The footer stays pinned while the table
+scrolls on a phone, and the table is a focusable, labelled region that
+takes the initial focus: arrow keys scroll the rounds and Enter never
+activates the ✕.
 
 ## Key decisions
 

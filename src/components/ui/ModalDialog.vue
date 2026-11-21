@@ -6,6 +6,8 @@ import { useFocusTrap } from '@/composables/useFocusTrap';
  * Blocking modal wrapper: teleported to <body>, `aria-modal`, focus trapped
  * (first focusable element gets focus), the app behind it made `inert`, and
  * focus restored on close. It never closes itself; the parent decides.
+ * `dismissible` viewers emit `dismiss` on a backdrop click; decision dialogs
+ * leave it off so a stray click never makes the choice for the user.
  */
 const props = withDefaults(
   defineProps<{
@@ -21,9 +23,33 @@ const props = withDefaults(
     width?: string;
     /** Selector (inside the panel) of the element focused on open; defaults to the first focusable. */
     initialFocus?: string;
+    /** Emit `dismiss` when the backdrop is clicked (viewers only, never decisions). */
+    dismissible?: boolean;
   }>(),
-  { describedby: '', inertSelector: '#app', revealDelay: '0s', width: '380px', initialFocus: '' },
+  {
+    describedby: '',
+    inertSelector: '#app',
+    revealDelay: '0s',
+    width: '380px',
+    initialFocus: '',
+    dismissible: false,
+  },
 );
+const emit = defineEmits<{ dismiss: [] }>();
+
+/*
+ * A backdrop click counts only when the press also started on the backdrop,
+ * so dragging a text selection out of the panel never closes the dialog.
+ */
+let pressedOnScrim = false;
+function onScrimPointerDown(event: PointerEvent): void {
+  pressedOnScrim = event.target === event.currentTarget;
+}
+function onScrimClick(event: MouseEvent): void {
+  const fromScrim = pressedOnScrim && event.target === event.currentTarget;
+  pressedOnScrim = false;
+  if (props.dismissible && fromScrim) emit('dismiss');
+}
 
 const panel = ref<HTMLElement | null>(null);
 const initialFocusElement = computed<HTMLElement | null>(() =>
@@ -43,7 +69,13 @@ useFocusTrap(panel, toRef(props, 'open'), {
 <template>
   <Teleport to="body">
     <Transition name="modal" appear>
-      <div v-if="open" class="modal-scrim" :style="{ '--reveal-delay': revealDelay }">
+      <div
+        v-if="open"
+        class="modal-scrim"
+        :style="{ '--reveal-delay': revealDelay }"
+        @pointerdown="onScrimPointerDown"
+        @click="onScrimClick"
+      >
         <div
           ref="panel"
           class="modal-panel"

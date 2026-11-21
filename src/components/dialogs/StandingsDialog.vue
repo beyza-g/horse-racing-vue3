@@ -2,7 +2,6 @@
 import { computed } from 'vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import ColorTick from '@/components/ui/ColorTick.vue';
-import IconChevron from '@/components/ui/icons/IconChevron.vue';
 import IconClose from '@/components/ui/icons/IconClose.vue';
 import MovementBadge from '@/components/ui/MovementBadge.vue';
 import ModalDialog from '@/components/ui/ModalDialog.vue';
@@ -14,11 +13,21 @@ import { useRaceStore } from '@/stores/race';
  * frame, so narrow screens scroll the table, never the page. Points come
  * right after the horse and the rank and horse columns stay pinned, so the
  * total is always visible while the rounds scroll.
+ *
+ * A read-only viewer, so it is quick to leave: the top-right ✕, a backdrop
+ * click and Esc all close it, back to wherever it was opened from (the track,
+ * or the completion summary it is stacked on). The footer is kept for the
+ * forward action only: "Generate new program" once the program is complete,
+ * pinned while the table scrolls. Decision dialogs (completion, discard)
+ * deliberately have neither ✕ nor backdrop dismissal. The table region takes
+ * the initial focus, so Enter there never activates the ✕.
  */
 const race = useRaceStore();
 const view = computed(() => race.standings);
 /** Opened from the completion summary, closing goes back to it rather than to the track. */
-const closeLabel = computed(() => (race.standingsReturnToSummary ? 'Back to summary' : 'Close'));
+const closeLabel = computed(() =>
+  race.standingsReturnToSummary ? 'Back to summary' : 'Close standings',
+);
 const subtitle = computed(() => {
   const n = view.value.officialRounds;
   if (n === 6) return 'Final standings after all six rounds';
@@ -32,39 +41,28 @@ const subtitle = computed(() => {
     labelledby="standings-title"
     describedby="standings-subtitle"
     width="720px"
+    initial-focus=".standings__frame"
+    dismissible
+    @dismiss="race.closeStandings()"
   >
     <div class="standings__head">
       <div class="standings__intro">
-        <!-- Stacked on the summary: a back control top-left (it returns there). -->
-        <button
-          v-if="race.standingsReturnToSummary"
-          type="button"
-          class="standings__back"
-          aria-label="Back to summary"
-          title="Back to summary (Esc)"
-          @click="race.closeStandings()"
-        >
-          <IconChevron direction="left" />
-          <span>Summary</span>
-        </button>
         <p class="standings__eyebrow mono">PROGRAM STANDINGS</p>
         <h2 id="standings-title" class="standings__title">Standings</h2>
         <p id="standings-subtitle" class="standings__subtitle">{{ subtitle }}</p>
       </div>
-
       <button
-        v-if="!race.standingsReturnToSummary"
         type="button"
         class="standings__close"
-        aria-label="Close standings"
-        title="Close (Esc)"
+        :aria-label="closeLabel"
+        :title="`${closeLabel} (Esc)`"
         @click="race.closeStandings()"
       >
         <IconClose />
       </button>
     </div>
 
-    <div class="standings__frame">
+    <div class="standings__frame" role="region" aria-label="Standings table" tabindex="0">
       <table class="standings__table">
         <caption class="visually-hidden">
           Points and placing per round for every horse. 10, 8, 6, 5, 4, 3, 2 and 1 points for 1st to
@@ -128,20 +126,17 @@ const subtitle = computed(() => {
         horses still level share a rank (=). A dot marks a round the horse is entered in but has not
         run yet.
       </p>
-      <div class="standings__actions">
-        <AppButton class="standings__action" @click="race.closeStandings()">{{
-          closeLabel
-        }}</AppButton>
-        <AppButton
-          v-if="race.phase === 'complete'"
-          variant="primary"
-          class="standings__action"
-          data-action="generate"
-          @click="race.requestNewProgram()"
-        >
-          Generate new program
-        </AppButton>
-      </div>
+    </div>
+    <!-- A direct child of the scrolling panel, so it can stay pinned. -->
+    <div v-if="race.phase === 'complete'" class="standings__actions">
+      <AppButton
+        variant="primary"
+        class="standings__action"
+        data-action="generate"
+        @click="race.requestNewProgram()"
+      >
+        Generate new program
+      </AppButton>
     </div>
   </ModalDialog>
 </template>
@@ -158,6 +153,26 @@ const subtitle = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
+}
+
+.standings__close {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border: none;
+  border-radius: 50%;
+  background-color: var(--chip-strong);
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.standings__close:hover {
+  background-color: var(--hover-ring);
 }
 
 .standings__eyebrow {
@@ -180,43 +195,6 @@ const subtitle = computed(() => {
   margin: 0;
   font-size: 13px;
   color: var(--muted);
-}
-
-.standings__close {
-  width: 32px;
-  height: 32px;
-  flex: none;
-  border: none;
-  border-radius: 50%;
-  background-color: var(--chip-strong);
-  color: var(--text);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.standings__close:hover,
-.standings__back:hover {
-  background-color: var(--hover-ring);
-}
-
-.standings__back {
-  align-self: flex-start;
-  margin-bottom: 8px;
-  height: 32px;
-  flex: none;
-  padding: 0 12px 0 8px;
-  border: none;
-  border-radius: var(--radius-pill);
-  background-color: var(--chip-strong);
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
 }
 
 .standings__frame {
@@ -399,15 +377,19 @@ tbody tr.is-followed {
 }
 
 /*
- * Secondary then primary, right-aligned at equal widths. When they no longer
- * fit side by side they wrap; wrap-reverse puts the primary action on top,
- * matching the completion summary's hierarchy.
+ * The forward action, right-aligned (full width on phones). Pinned to the
+ * bottom of the scrolling dialog (its padding is 18 px) and above the pinned
+ * table columns, so it stays in view while the table scrolls.
  */
 .standings__actions {
   display: flex;
-  flex-wrap: wrap-reverse;
   justify-content: flex-end;
-  gap: 8px;
+  position: sticky;
+  bottom: -18px;
+  z-index: 2;
+  margin: -10px 0 -18px;
+  padding: 10px 0 18px;
+  background: var(--panel);
 }
 
 .standings__action {

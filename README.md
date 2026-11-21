@@ -5,6 +5,9 @@ deterministic TypeScript race engine. Generate a program of six races, start
 it, and watch each round run on an animated track while the live order,
 official results and a broadcast-style race clock update alongside.
 
+**Live demo: [horse-racing-vue3.vercel.app](https://horse-racing-vue3.vercel.app/)**
+(production build on Vercel; add `?seed=42` for a reproducible program).
+
 ![Round 2 in progress on desktop in the dark theme, following one horse](docs/images/desktop-dark-following.png)
 
 ## Quick start
@@ -24,7 +27,7 @@ results fully reproducible; the end-to-end tests rely on this.
 | ------------------------- | --------------------------------------------------------------------- |
 | `npm run verify`          | ESLint, Prettier check, `vue-tsc`, English-only check, all unit tests |
 | `npm run build`           | Type-check and production build                                       |
-| `npm run test`            | Vitest unit and component tests (602)                                 |
+| `npm run test`            | Vitest unit and component tests (609)                                 |
 | `npm run test:coverage`   | The same, with V8 coverage                                            |
 | `npm run test:e2e`        | Playwright end-to-end, layout and visual tests (46) on the build      |
 | `npm run test:e2e:update` | Refresh visual baselines after an intended UI change                  |
@@ -65,7 +68,7 @@ can confirm.
 | Clean, scalable code                       | Layered architecture with enforced boundaries ([architecture](docs/architecture.md))                             |
 | Vuex or Pinia                              | Pinia setup stores                                                                                               |
 | Component-based design                     | Containers, presentational components and slot wrappers ([UI/UX](docs/ux.md#component-structure))                |
-| Bonus: unit, E2E and visual tests          | 602 Vitest tests, 46 Playwright tests including screenshot baselines ([quality](docs/quality.md))                |
+| Bonus: unit, E2E and visual tests          | 609 Vitest tests, 46 Playwright tests including screenshot baselines ([quality](docs/quality.md))                |
 
 One interpretation to note: the brief says the horse list contains "between 1
 and 20 horses" but also requires exactly 20 available horses. The game always

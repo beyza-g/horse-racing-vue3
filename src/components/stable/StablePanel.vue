@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import AppButton from '@/components/ui/AppButton.vue';
+import IconChevron from '@/components/ui/icons/IconChevron.vue';
 import PanelCard from '@/components/ui/PanelCard.vue';
 import TabSwitch from '@/components/ui/TabSwitch.vue';
 import { usePreferencesStore } from '@/stores/preferences';
@@ -46,20 +47,22 @@ const view = ref<string>('roster');
     >
       <StandingsList :standings="race.standings" @follow="preferences.toggleFollow" />
       <div class="stable-panel__footer stable-panel__footer--standings">
+        <!-- Context only; the scoring rule lives in the standings dialog. -->
         <p class="stable-panel__scoring">
-          <span>{{
+          {{
             race.standings.hasResults
               ? `After ${race.standings.officialRounds} of 6 rounds`
               : 'No official round yet'
-          }}</span>
-          <span class="stable-panel__scale mono">Pts 10-8-6-5-4-3-2-1</span>
+          }}
         </p>
         <AppButton
           class="stable-panel__table"
+          aria-haspopup="dialog"
           :disabled="!race.hasProgram"
           @click="race.openStandings()"
         >
           Full table
+          <IconChevron direction="right" />
         </AppButton>
       </div>
     </div>
@@ -96,23 +99,27 @@ const view = ref<string>('roster');
 
 .stable-panel__scoring {
   margin: 0;
-  display: flex;
-  flex-direction: column;
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: 12px;
   color: var(--muted);
   white-space: nowrap;
 }
 
-.stable-panel__scale {
-  font-size: 10px;
-  color: var(--faint);
+/*
+ * Tonal button: a filled neutral surface reads as clickable in both themes
+ * without competing with the amber primary actions in the header.
+ */
+.stable-panel__table {
+  height: 32px;
+  padding: 0 10px 0 12px;
+  gap: 6px;
+  font-size: 12.5px;
+  flex: none;
+  border-color: transparent;
+  background-color: var(--chip-strong);
 }
 
-.stable-panel__table {
-  height: 30px;
-  padding: 0 10px;
-  font-size: 12px;
-  flex: none;
+.stable-panel__table:hover:not(:disabled) {
+  background-color: var(--hover-ring);
+  background-image: none;
 }
 </style>

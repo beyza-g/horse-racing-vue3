@@ -226,6 +226,22 @@ describe('App', () => {
       expect(w.findAll('.stable-table__row')).toHaveLength(20);
     });
 
+    it('keeps the standings footer to one line of context and a dialog trigger', async () => {
+      const { wrapper: w, race } = mountApp();
+      await w.get('#stable-tab-standings').trigger('click');
+      const footer = w.get('.stable-panel__footer--standings');
+      const button = footer.get('button');
+      expect(footer.get('.stable-panel__scoring').text()).toBe('No official round yet');
+      // The scoring rule is explained in the dialog, not repeated here.
+      expect(footer.text()).not.toContain('10-8-6');
+      expect(button.text()).toBe('Full table');
+      expect(button.attributes('aria-haspopup')).toBe('dialog');
+      expect(button.attributes('disabled')).toBeDefined();
+      race.generateProgram();
+      await nextTick();
+      expect(button.attributes('disabled')).toBeUndefined();
+    });
+
     it('opens the full table, closes with Escape and restores focus', async () => {
       const { wrapper: w, race } = mountApp();
       race.generateProgram();
@@ -244,7 +260,8 @@ describe('App', () => {
       expect(dialog.querySelectorAll('tbody tr')).toHaveLength(20);
       expect(dialog.querySelectorAll('thead th[scope="col"]')).toHaveLength(9);
       expect(dialog.querySelectorAll('tbody th[scope="row"]')).toHaveLength(20);
-      expect(document.activeElement?.getAttribute('aria-label')).toBe('Close standings');
+      // The table region takes focus, so Enter never activates the close button.
+      expect(document.activeElement?.getAttribute('aria-label')).toBe('Standings table');
       await press('Escape');
       await nextTick();
       expect(race.standingsOpen).toBe(false);
@@ -273,11 +290,14 @@ describe('App', () => {
         Number(td.textContent),
       );
       expect(points.reduce((a, b) => a + b, 0)).toBe(234);
-      // Stacked on the summary, the header control is a back button, not a close.
-      expect(dialog.querySelector('.standings__back')?.getAttribute('aria-label')).toBe(
+      // Stacked on the summary, the top-right close goes back to it; the footer
+      // holds only the forward action.
+      expect(dialog.querySelector('.standings__close')?.getAttribute('aria-label')).toBe(
         'Back to summary',
       );
-      expect(dialog.querySelector('.standings__close')).toBeNull();
+      expect(
+        [...dialog.querySelectorAll('.standings__actions button')].map((b) => b.textContent.trim()),
+      ).toEqual(['Generate new program']);
     });
 
     it('Enter in the final standings starts a new program', async () => {
@@ -286,14 +306,14 @@ describe('App', () => {
       await playToCompletion(race);
       dialogButton('Final standings').click();
       await settle();
-      (document.activeElement as HTMLElement | null)?.blur();
+      expect(document.activeElement?.getAttribute('aria-label')).toBe('Standings table');
       await press('Enter');
       expect(race.phase).toBe('ready');
       expect(race.standingsOpen).toBe(false);
       expect(race.completionOpen).toBe(false);
     });
 
-    it('mid-program the standings show a close control and Enter does nothing', async () => {
+    it('mid-program the standings close from the corner or the backdrop; Enter does nothing', async () => {
       const { wrapper: w, race } = mountApp();
       race.generateProgram();
       await nextTick();
@@ -301,12 +321,18 @@ describe('App', () => {
       await w.get('.stable-panel__table').trigger('click');
       await settle();
       const dialog = document.querySelector('[role="dialog"]')!;
-      expect(dialog.querySelector('.standings__close')).not.toBeNull();
-      expect(dialog.querySelector('.standings__back')).toBeNull();
-      (document.activeElement as HTMLElement | null)?.blur();
+      expect(dialog.querySelector('.standings__close')?.getAttribute('aria-label')).toBe(
+        'Close standings',
+      );
+      expect(dialog.querySelector('.standings__actions')).toBeNull();
       await press('Enter');
       expect(race.standingsOpen).toBe(true);
       expect(race.phase).toBe('ready');
+      const scrim = document.querySelector<HTMLElement>('.modal-scrim')!;
+      scrim.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      scrim.click();
+      await settle();
+      expect(race.standingsOpen).toBe(false);
     });
 
     it('closing the final standings returns to the summary, focused where it left off', async () => {
@@ -329,13 +355,38 @@ describe('App', () => {
       expect(again.style.getPropertyValue('--reveal-delay')).toBe('0s');
     });
 
+    it('the completion summary is a decision: a backdrop click never dismisses it', async () => {
+      const { race } = mountApp();
+      race.generateProgram();
+      await playToCompletion(race);
+      const scrim = document.querySelector<HTMLElement>('.modal-scrim')!;
+      scrim.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      scrim.click();
+      await settle();
+      expect(race.completionOpen).toBe(true);
+    });
+
+    it('a backdrop click on the final standings returns to the summary', async () => {
+      const { race } = mountApp();
+      race.generateProgram();
+      await playToCompletion(race);
+      dialogButton('Final standings').click();
+      await settle();
+      const scrim = document.querySelector<HTMLElement>('.modal-scrim')!;
+      scrim.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      scrim.click();
+      await settle();
+      expect(race.standingsOpen).toBe(false);
+      expect(race.completionOpen).toBe(true);
+    });
+
     it('Back to summary and Generate new program work from the standings', async () => {
       const { race } = mountApp();
       race.generateProgram();
       await playToCompletion(race);
       dialogButton('Final standings').click();
       await settle();
-      dialogButton('Back to summary').click();
+      document.querySelector<HTMLButtonElement>('[aria-label="Back to summary"]')!.click();
       await settle();
       expect(race.completionOpen).toBe(true);
       dialogButton('Final standings').click();
