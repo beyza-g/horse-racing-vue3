@@ -5,7 +5,7 @@ deterministic TypeScript race engine. Generate a program of six races, start
 it, and watch each round run on an animated track while the live order,
 official results and a broadcast-style race clock update alongside.
 
-![Round 2 in progress on desktop in the dark theme, following one horse](docs/images/race-dark.png)
+![Round 2 in progress on desktop in the dark theme, following one horse](docs/images/desktop-dark-following.png)
 
 ## Quick start
 

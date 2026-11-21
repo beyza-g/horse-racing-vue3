@@ -1,6 +1,6 @@
 # UI and UX
 
-![Round 2 in progress on desktop in the dark theme, following one horse](images/race-dark.png)
+![Round 2 in progress on desktop in the dark theme, following one horse](images/desktop-dark-following.png)
 
 ## Layout
 
