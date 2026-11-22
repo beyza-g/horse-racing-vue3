@@ -1,8 +1,8 @@
 # Architecture
 
-The guiding idea: everything that decides **what happens** in a race is pure,
-deterministic TypeScript that can be tested without a browser. Vue, Pinia and
-the canvas only **show** it.
+Everything that decides **what happens** in a race is pure, deterministic
+TypeScript that can be tested without a browser. Vue, Pinia and the canvas
+only **show** it.
 
 ## Layers
 
@@ -18,11 +18,9 @@ playback/          Pure timing: clock, fixed-step accumulator, slow motion, phas
 domain/            Pure rules: horses, programs, condition, physics, standings, timeboard
 ```
 
-Dependencies point downwards only. The two bottom layers have no access to
-Vue, Pinia, the DOM, wall-clock time or `Math.random`: randomness comes from
-an injected seeded generator and time arrives as an explicit delta.
-
-**How the boundaries are enforced**, so they survive refactoring:
+Dependencies point downwards only. `domain` and `playback` have no access to
+Vue, Pinia, the DOM, wall-clock time or `Math.random`: randomness is an
+injected seeded generator and time arrives as an explicit delta.
 
 | Mechanism                                      | What it catches                                                                                       |
 | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
@@ -31,37 +29,25 @@ an injected seeded generator and time arrives as an explicit delta.
 | `tsconfig.core.json`                           | Type-checks `domain` and `playback` **without the DOM library**, so a stray `window` does not compile |
 | Vitest `core` project                          | Runs those layers' specs in plain Node, so a hidden DOM dependency fails at runtime too               |
 
-Each layer exposes a barrel (`@/domain`, `@/playback`, `@/render`); internal
-helpers stay private to their modules.
-
 ## Determinism
 
-The same seed produces the same horses, programs, finishing orders and
-official times, whatever the frame rate, playback speed, pauses or tab
-switches. Four design decisions make that structural rather than a matter of
-discipline:
+The same seed gives the same horses, programs, finishing orders and official
+times, whatever the frame rate, speed, pauses or tab switches:
 
-1. **Seeded, forked randomness.** `createRng(seed)` is a mulberry32 generator.
-   Separate concerns draw from separate forks (`forkRng`), so changing how one
-   concern consumes randomness cannot shift another's outcomes.
-2. **Each round carries its own `raceSeed`.** The program alone determines
-   every race; nothing about playback feeds back into the engine.
+1. **Forked randomness.** `createRng(seed)` is mulberry32; each concern draws
+   from its own `forkRng` stream, so one cannot shift another.
+2. **A seed per round.** Each round carries a `raceSeed`; the program alone
+   decides every race.
 3. **Fixed timestep.** `Race.tick(count)` advances in whole `SIM_STEP`
-   (1/120 s) ticks and `elapsed` is `ticks × SIM_STEP`, so there is no
-   floating-point drift. A frame converts its simulation time into ticks
-   through an accumulator that carries the remainder.
-4. **No timers in game flow.** Countdown, settling and intermission are phase
-   durations advanced by frame deltas, so regenerating mid-race cannot leave a
-   stale `setTimeout` to fire later.
-
-Tests assert the outcome directly: a full program run with random pauses,
-speed changes, `NaN` deltas and 30-second tab-switch frames produces results
-identical to `runToCompletion()`.
+   (1/120 s) ticks via an accumulator that carries the remainder, so there is
+   no drift.
+4. **No timers in game flow.** Phases advance on frame deltas, so
+   regenerating can never leave a stale `setTimeout` behind.
 
 ## Three kinds of time
 
-Mixing these up caused the one real playback bug in the project (see
-[quality](quality.md#bugs-caught)), so they are kept strictly apart:
+Mixing these up caused a real playback bug (slow motion skipped after a
+pause), so they are kept strictly apart:
 
 | Time              | Source                                  | Pauses? | Used for                                         |
 | ----------------- | --------------------------------------- | ------- | ------------------------------------------------ |
@@ -70,12 +56,9 @@ Mixing these up caused the one real playback bug in the project (see
 | Timeboard time    | `simulation × timeboardScale(distance)` | yes     | Race clock and finish times shown to users       |
 
 Presentation time is wall time clamped to 0.05 s per frame and zero while
-paused. Effects never subtract wall-clock timestamps: wall time keeps running
-during a pause or a hidden tab, so an effect timed that way expires unseen.
+paused; effects never subtract wall-clock timestamps.
 
 ## The frame pipeline
-
-Each animation frame does the same thing, in this order:
 
 ```
 wallDt ─► clock.advance          clamp, apply pause, read speed
@@ -85,12 +68,10 @@ wallDt ─► clock.advance          clamp, apply pause, read speed
         ─► motion.advance         stride phase, drive, post-finish fades
 ```
 
-`runRaceFrame` (`src/playback/raceFrame.ts`) implements this as one pure
-function, so every step is unit-testable with hand-written deltas.
+`runRaceFrame` (`src/playback/raceFrame.ts`) is this pipeline as one pure
+function.
 
 ## The race director
-
-`createRaceDirector` is a phase machine driven only by frame deltas:
 
 ```
 idle ─load─► ready ─start─► countdown ─2.4 s─► running ─last finisher─► settling
@@ -99,76 +80,35 @@ idle ─load─► ready ─start─► countdown ─2.4 s─► running ─last
                                                               (round 6) ──► complete
 ```
 
-- Pause works in `countdown`, `running`, `settling` and `intermission`, and
-  freezes everything, including the slow motion and the race clock.
-- `load` (Generate) is valid in every phase and resets synchronously.
-- `complete` cannot be restarted by Start or Space; a new program is the only
-  way forward.
-- The intermission speeds up with 2x but not beyond, so the winner card stays
-  readable at 4x.
-- Frames return typed events (`phaseChanged`, `runnerFinished`,
-  `standingsChanged`, `roundOfficial`, `programComplete`). A frame with no
-  events returns a shared empty array, so idle frames allocate nothing.
+Pause freezes every active phase; `load` (Generate) works in any phase and
+resets synchronously; a completed program cannot be restarted. Frames return
+typed events that the store applies.
 
 ## State management
 
-The director is a plain object owned by the race store and marked `markRaw`,
-so Vue never proxies the hot simulation state. Outside the store it is
-reachable only as a `RaceDirectorView` (`getDirector()`): state and runner
-motion, with the race as a `RaceView`, but no commands and no `tick`, so the
-renderer cannot advance or reset the game. Everything reactive is listed
-below with the reason it is stored rather than derived or kept local.
+The director is owned by the race store and marked `markRaw`, so Vue never
+proxies the hot simulation state. Outside the store, `getDirector()` returns a
+read-only `RaceDirectorView`: state and runner motion, no commands, so the
+renderer cannot advance or reset the game. The compiler enforces this.
 
-**Race store** (`stores/race.ts`)
+| State                                                           | Why stored                                 |
+| --------------------------------------------------------------- | ------------------------------------------ |
+| `horses`, `program`                                             | Inputs to every panel; immutable           |
+| `results`                                                       | Mirrors official results from the director |
+| `phase`, `paused`, `roundIndex`                                 | Reactive mirror of the director            |
+| `liveOrder`                                                     | Throttled live board, read only there      |
+| `inspectedRound`, `expandedRound`                               | View choices that game events reset        |
+| `completionDismissed`, `confirmRegenerateOpen`, `standingsOpen` | Dialogs coordinated with game flow         |
+| Preferences: `theme`, `speed`, `focusMode`, `followedHorseId`   | Read by many panels; theme persisted       |
 
-| State                                                           | Why it is stored                                                                                              |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `horses`, `program`                                             | Session roster and current program; inputs to every panel. Immutable objects in `shallowRef`s                 |
-| `results`                                                       | Official round results; the director is not reactive, so the store mirrors them when a round is made official |
-| `phase`, `paused`, `roundIndex`                                 | Reactive mirror of the director's state, updated on its events and on user actions                            |
-| `liveOrder`                                                     | Throttled live leaderboard (at most every 250 ms, immediately on a finish); read by the board only            |
-| `inspectedRound`, `expandedRound`                               | User view choices that game events must reset (a new round expands itself and clears inspection)              |
-| `completionDismissed`, `confirmRegenerateOpen`, `standingsOpen` | Dialog state that game flow and shortcuts must coordinate: pausing, never stacking, closing on regenerate     |
+**Deliberately not stored:** per-frame positions (the renderer reads the
+director), the hovered lane and the active Stable tab (local state), program
+standings (derived from results) and every display value (pure view-model
+builders in `stores/views/`, re-exported by `stores/raceView.ts`).
 
-Plain (non-reactive) variables in the same store hold the session's seeded
-generator and two "resume after this dialog" flags; nothing renders them.
-
-**Preferences store** (`stores/preferences.ts`): `theme` (persisted),
-`speed` (drives the director through a synchronous watcher), `focusMode` and
-`followedHorseId` (read by several panels and the renderer).
-
-**Deliberately not in a store:** per-frame positions and motion (the
-renderer reads the director directly), the hovered track lane (local to the
-track's loop composable), the Roster/Standings tab (local to the panel), the
-completion dialog's reveal and focus-return flags (local to the dialog),
-and every derived display. Derived displays come from **pure view-model
-builders** (status line, board rows, program cards, stable rows, standings
-and movement, condition badges, medals, and whether regenerating needs
-confirmation), tested without Vue or Pinia. They live in one module per
-screen area under `stores/views/` (`header`, `results`, `horseRows`,
-`standings`, plus `shared` for the store snapshot type and small helpers);
-`stores/raceView.ts` re-exports them, so callers have one import path.
-
-**Reactivity granularity.** The view models share one computed input, except
-the live order, which only the board reads. Keeping it out of the shared
-input means a live-order publication rebuilds the board alone instead of
-every panel; a store spec asserts the other view models keep their identity.
-
-**Program standings** are a pure domain function
-(`computeProgramStandings` in `src/domain/programStandings.ts`) of the
-official results, so they are deterministic and recomputed, never stored;
-`buildStandings` turns them into rows and per-round cells for the UI. The
-standings dialog pauses a running race while open (same pause-and-remember
-rule as the regenerate confirmation), and the completion summary waits while
-it is open, so two modals never stack.
-
-**Guarded regeneration.** The director itself accepts a new program in any
-phase. The store's `requestNewProgram` adds the user-facing guard: when a
-round is underway or official results exist, it pauses the race (remembering
-whether it was the one to pause) and opens a confirmation; cancelling resumes
-only if it paused. Pausing is already deterministic, so a cancelled
-confirmation leaves the eventual results unchanged, which a store spec
-asserts over a full program.
+**Reactivity granularity.** All view models share one computed input except
+the live order, which only the board reads. A live-order update therefore
+rebuilds the board alone, and a store spec fails if that regresses.
 
 ## Components
 
@@ -178,41 +118,48 @@ asserts over a full program.
 | Presentational | `ResultsLeaderboard`, `CompletedRounds`, `RoundCard`, `StableTable`, `StatusIndicator`, `ConditionBadge`, ... | Typed props in, events out; no stores |
 | Wrappers       | `DashboardLayout`, `PanelCard`, `ModalDialog`                                                                 | Structure or behaviour through slots  |
 
-Presentational components receive view models from the pure builders, so a
-component test only needs props.
-
 ## Rendering
 
-The track is a Canvas 2D surface rather than DOM elements: ten animated
-horses, particles and per-frame text would otherwise mean hundreds of style
-updates per frame. The renderer is split into small drawing modules
-(`drawTrack`, `drawHorse`, `drawRunners`, `drawOverlays`, `particles`) around
-a pure `geometry` module that owns lane mapping, hit testing and label
-placement. It sizes the backing store by device pixel ratio (capped at 2) and
-follows its container with a `ResizeObserver`.
+The track is Canvas 2D: ten multi-part animated horses, particles and
+per-frame text would otherwise mean hundreds of style updates per frame. Small
+drawing modules sit around a pure `geometry` module that owns lane mapping,
+hit testing and label placement; the canvas scales with device pixel ratio
+(capped at 2) and follows its container with a `ResizeObserver`.
 
-## Performance notes
+## Performance
 
-- The physics loop allocates nothing per tick: a reused crossing buffer,
-  strategies that take primitives, an in-place insertion sort (O(n) on nearly
-  sorted standings) and no sorting once a race has settled.
-- `standingsVersion` changes only when the order or a placing changes, so the
-  store skips redundant updates.
-- Stamina weakness is computed once per runner per race, not per tick.
+- The physics loop allocates nothing per tick (reused buffers, in-place
+  insertion sort).
+- The live order reaches the store at most every 250 ms, and only the board
+  reads it.
 - Production bundle: about 170 kB of JavaScript (62 kB gzipped) and 41 kB of
-  CSS; fonts are self-hosted, so there is no external request or font swap.
+  CSS, with self-hosted fonts.
+
+## Error handling
+
+- Domain factories validate input and throw a typed `DomainError`; they never
+  return `NaN` or a partial entity.
+- User input is sanitised at the edge: an invalid `?seed=` falls back to a
+  random seed (`parseSeed`), and an unsupported speed is ignored
+  (`setSpeed`).
+- The animation loop (`useAnimationFrame`) reports a throwing frame once and
+  keeps running. In production this is where an error reporter such as Sentry
+  would plug in, together with `app.config.errorHandler`; attaching the seed
+  makes any reported race reproducible.
+
+## Extending
+
+- **Web Worker:** `domain` and `playback` compile without the DOM, so the
+  director can run in a worker and post a small snapshot per frame.
+- **Several races:** `createRaceDirector` is a factory; only the race store is
+  a singleton.
+- **Shared live viewing:** results depend only on the program and its seeds,
+  so clients can replay the same race locally (deterministic lockstep).
 
 ## Tooling
 
-| Concern        | Choice                                                                                                                                     |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Language       | TypeScript 6 with `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `erasableSyntaxOnly` and friends; `any` is banned    |
-| Lint           | ESLint `strictTypeChecked` + `switch-exhaustiveness-check` + `eslint-plugin-vue`; disable comments require a reason; zero warnings allowed |
-| Formatting     | Prettier                                                                                                                                   |
-| Unit tests     | Vitest with two projects: `core` (Node) and `ui` (jsdom)                                                                                   |
-| E2E            | Playwright against the production build with a fixed seed                                                                                  |
-| Language guard | `scripts/check-english.mjs` keeps code, tests and docs in English                                                                          |
-
-Styling uses CSS custom-property tokens with scoped component styles rather
-than a utility framework: the visual language is token-driven, and six icons
-do not justify an icon library. See [UI/UX](ux.md).
+Non-default choices only: strict TypeScript beyond `strict`
+(`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`,
+`erasableSyntaxOnly`), no `any`, zero-warning ESLint with type-aware rules
+(`strictTypeChecked`, `switch-exhaustiveness-check`), and a script that keeps
+code, tests and docs in English.

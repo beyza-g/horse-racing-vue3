@@ -10,7 +10,7 @@ docs; this file points to them instead of repeating them.
 | `docs/architecture.md` | Layers, determinism, time, the director, state inventory, components  |
 | `docs/domain.md`       | Race rules, condition and race-time models with sources, scope limits |
 | `docs/ux.md`           | Layout, interaction decisions, zero layout shift, keyboard, a11y      |
-| `docs/quality.md`      | Test suites and counts, coverage, edge-case matrix, bugs caught       |
+| `docs/quality.md`      | Test suites and counts, coverage, edge-case matrix, known limitations |
 
 Live demo: https://horse-racing-vue3.vercel.app/ (production build on Vercel).
 
