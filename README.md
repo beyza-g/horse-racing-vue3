@@ -62,14 +62,13 @@ requires exactly 20 available horses; the game always generates all 20.
 - **Planning & scope:** I set the architecture, boundaries, and rules up front
   in `CLAUDE.md` (layer isolation, determinism, tests with changes) and made
   the product, UX, and scope decisions throughout—including what not to build.
-- **Implementation:** Used Claude Code to speed up implementation, refactoring,
-  and test/doc drafting within those constraints rather than letting tooling
-  drive architecture.
+- **Implementation:** Used Claude Code to speed up implementation,
+  refactoring, and test and doc drafting within those constraints.
 - **Automated gate:** ESLint layer rules, a DOM-free TypeScript build for the
   core, and `npm run verify` run before committing.
 - **Review and approval:** I reviewed changes before committing, inspected UI
-  behavior in production builds across viewports, and required tests that fail
-  without the fix to lock in behavior.
+  behavior in production builds across viewports, and locked fixes in with
+  regression tests.
 
 ## Documentation
 
