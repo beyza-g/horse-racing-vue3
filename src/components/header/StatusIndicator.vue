@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import StatusPill from '@/components/ui/StatusPill.vue';
-import type { StatusView } from '@/stores/raceView';
+import type { StatusView } from '@/viewModels';
 
 defineProps<{ status: StatusView }>();
 </script>

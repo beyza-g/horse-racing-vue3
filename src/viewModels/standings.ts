@@ -1,6 +1,6 @@
 /** Program standings view model: points, per-round placings, form and rank movement. */
-import { computeProgramStandings, formFigures, ROUND_DISTANCES, type HorseId } from '@/domain';
-import { formatOrdinal } from '@/playback';
+import { computeProgramStandings, formFigures, ROUND_DISTANCES, type HorseId } from '../domain';
+import { formatOrdinal } from '../playback';
 import { MEDALS, pad, type Medal, type RaceViewState } from './shared';
 
 /** A horse's result in one round of the program. */

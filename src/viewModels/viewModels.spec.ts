@@ -8,8 +8,8 @@ import {
   generateProgram,
   indexRoster,
   type RoundResult,
-} from '@/domain';
-import { buildLiveOrder, type DirectorPhase } from '@/playback';
+} from '../domain';
+import { buildLiveOrder, type DirectorPhase } from '../playback';
 import {
   BOARD_ROW_HEIGHT,
   boardRoundIndex,
@@ -26,7 +26,7 @@ import {
   isGeneratePrimary,
   regenerateNeedsConfirmation,
   type RaceViewState,
-} from './raceView';
+} from '.';
 
 const rng = createRng(11);
 const roster = generateHorses(forkRng(rng));

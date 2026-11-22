@@ -19,20 +19,29 @@ Live demo: https://horse-racing-vue3.vercel.app/ (production build on Vercel).
 1. **English only** in code, identifiers, UI copy, comments, tests, commits
    and docs. `npm run check:english` (part of `verify`) enforces it.
 2. **Layers point inward:**
-   `components → composables/stores → render → playback → domain`.
-   - `domain` and `playback` never touch Vue, Pinia, `window`, `document`,
-     `performance`, `requestAnimationFrame`, timers, `Date` or `Math.random`.
-     Randomness is an injected seeded `Rng`; time is a `dt` in seconds.
-   - `render` may use Canvas types, never Vue or Pinia.
+
+   ```
+   views → layouts/components → composables/stores → viewModels/render → playback → domain
+   ```
+
+   - `domain`, `playback` and `viewModels` never touch Vue, Pinia, `window`,
+     `document`, `performance`, `requestAnimationFrame`, timers, `Date` or
+     `Math.random`. Randomness is an injected seeded `Rng`; time is a `dt` in
+     seconds.
+   - `render` may use Canvas types, never Vue or Pinia. `stores` hold Pinia
+     state and actions only; display rules live in `viewModels`.
    - Enforced by per-layer ESLint restrictions and by `tsconfig.core.json`,
-     which type-checks `domain` + `playback` without the DOM lib.
+     which type-checks `domain`, `playback` and `viewModels` without the DOM
+     lib.
    - Outer layers import a layer through its barrel (`@/domain`, `@/playback`,
-     `@/render`). Inside `domain` and `playback`, use relative imports.
+     `@/viewModels`, `@/render`). Inside the DOM-free layers, use relative
+     imports.
+
 3. **Determinism.** Same seed ⇒ same horses, program, finishing order and
    official times, whatever the frame rate, speed, pauses or tab switches.
-4. **Tests ship with changes.** Domain and playback changes come with Vitest
-   specs using deterministic inputs only: seeded `Rng`, explicit `dt`
-   sequences, no real timers or wall-clock reads.
+4. **Tests ship with changes.** Domain, playback and view-model changes come
+   with Vitest specs using deterministic inputs only: seeded `Rng`, explicit
+   `dt` sequences, no real timers or wall-clock reads.
 5. **Zero layout shift and design tokens.** Theme values come from
    `src/styles/tokens.css`. State changes never move layout (see
    [conventions](#ui-conventions)).
@@ -95,10 +104,14 @@ Rules, research and simplifications: [domain](docs/domain.md).
 
 Behaviour and rationale: [ux](docs/ux.md).
 
+- **Views** (`src/views/`) compose a page and own page-wide interaction
+  (shortcuts, which dialog is open); **layouts** (`src/layouts/`) place
+  regions through slots and hold no data; `App.vue` only applies app-wide
+  concerns and renders the view.
 - **Containers** read stores and wire events; **presentational** components
-  take view models from `@/stores/raceView` as props and emit events, never
-  importing stores; **wrappers** (`PanelCard`, `ModalDialog`,
-  `DashboardLayout`) provide structure through slots.
+  take view models from `@/viewModels` as props and emit events, never
+  importing stores; **wrappers** (`PanelCard`, `ModalDialog`) provide
+  structure or behaviour through slots.
 - Clickable rows are native `<button>`s with ARIA state (`aria-pressed`,
   `aria-expanded`); the status line is `aria-live="polite"`.
 - Zero layout shift: fixed row heights, `min-width` on stateful buttons,
@@ -119,9 +132,9 @@ Suites, counts and the edge-case matrix: [quality](docs/quality.md). The
 matrix is part of the contract: changes keep every row covered.
 
 - Specs sit next to their module (`*.spec.ts`); import test APIs from
-  `vitest` (no globals). Project `core` (Node) runs domain, playback and
-  render specs; `ui` (jsdom) runs stores, composables, components and
-  `*.dom.spec.ts`.
+  `vitest` (no globals). Project `core` (Node) runs domain, playback, view
+  model and render specs; `ui` (jsdom) runs stores, composables, components,
+  layouts, views and `*.dom.spec.ts`.
 - Playwright runs the production build on port 4183 and always opens
   `?seed=42`. Baselines are macOS-specific.
 
@@ -130,10 +143,13 @@ matrix is part of the contract: changes keep every row covered.
 ```
 src/domain/       rules engine: constants, condition, horses, program, standings, race/
 src/playback/     clock, fixed-step accumulator, finish drama, motion, live order, director
+src/viewModels/   pure display rules per screen area (header, results, horseRows, standings)
 src/render/       canvas renderer, pure geometry, palettes
-src/stores/       race (facade over the director), preferences, raceView + views/*
+src/stores/       Pinia: race (facade over the director), preferences
 src/composables/  animation frame, race loop, shortcuts, focus trap, outside click, theme
-src/components/   layout, header, track, follow, results, program, stable, dialogs, ui
+src/components/   header, track, follow, results, program, stable, dialogs, ui
+src/layouts/      DashboardLayout (page skeleton: slots and responsive grid)
+src/views/        RaceDashboardView (the page); App.vue is the thin root shell
 src/styles/       tokens.css (light/dark), base.css
 tests/e2e/        race (flows), layout (overflow, zero shift), visual (baselines)
 scripts/          check-english.mjs, measure-outcomes.mjs

@@ -2,7 +2,7 @@
 import ConditionBadge from '@/components/ui/ConditionBadge.vue';
 import HorseBadge from '@/components/ui/HorseBadge.vue';
 import type { HorseId } from '@/domain';
-import type { StableRow } from '@/stores/raceView';
+import type { StableRow } from '@/viewModels';
 
 defineProps<{ rows: readonly StableRow[] }>();
 defineEmits<{ follow: [horseId: HorseId] }>();

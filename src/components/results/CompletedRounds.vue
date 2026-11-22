@@ -2,7 +2,7 @@
 import ColorTick from '@/components/ui/ColorTick.vue';
 import IconChevron from '@/components/ui/icons/IconChevron.vue';
 import StatusPill from '@/components/ui/StatusPill.vue';
-import type { CompletedRoundsView } from '@/stores/raceView';
+import type { CompletedRoundsView } from '@/viewModels';
 
 defineProps<{ view: CompletedRoundsView }>();
 defineEmits<{ inspect: [roundIndex: number]; backToLive: [] }>();

@@ -44,15 +44,15 @@ Keyboard shortcuts are listed in [UI/UX](docs/ux.md#keyboard).
 
 ## The brief, requirement by requirement
 
-| Requirement                                | Where and how                                                                                |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------- |
-| 20 horses, unique colours, condition 1–100 | Fixed roster, 20 distinct silk hues, researched condition model ([domain](docs/domain.md))   |
-| Generate a six-round schedule              | Rounds at 1200 to 2200 m, 10 random runners each                                             |
-| Start runs one round at a time             | A pause-aware phase machine ([architecture](docs/architecture.md#the-race-director))         |
-| Results appear as each race concludes      | Results board, completed rounds and program standings                                        |
-| Horses visibly move                        | Canvas 2D track with gallop, sprint and finish animation                                     |
-| Clean code, Pinia, components              | Enforced layers, Pinia setup stores, typed components ([architecture](docs/architecture.md)) |
-| Bonus: unit, E2E and visual tests          | 619 Vitest and 46 Playwright tests with screenshot baselines ([quality](docs/quality.md))    |
+| Requirement                                | Where and how                                                                                                                            |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 20 horses, unique colours, condition 1–100 | Fixed roster, 20 distinct silk hues, researched condition model ([domain](docs/domain.md))                                               |
+| Generate a six-round schedule              | Rounds at 1200 to 2200 m, 10 random runners each                                                                                         |
+| Start runs one round at a time             | A pause-aware phase machine ([architecture](docs/architecture.md#the-race-director))                                                     |
+| Results appear as each race concludes      | Results board, completed rounds and program standings                                                                                    |
+| Horses visibly move                        | Canvas 2D track with gallop, sprint and finish animation                                                                                 |
+| Clean code, Pinia, components              | Enforced layers: a page view, a layout, typed components, Pinia setup stores and pure view models ([architecture](docs/architecture.md)) |
+| Bonus: unit, E2E and visual tests          | 619 Vitest and 46 Playwright tests with screenshot baselines ([quality](docs/quality.md))                                                |
 
 The brief says the horse list holds "between 1 and 20 horses" but also
 requires exactly 20 available horses; the game always generates all 20.

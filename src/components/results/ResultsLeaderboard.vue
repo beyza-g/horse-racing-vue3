@@ -2,7 +2,7 @@
 import ColorTick from '@/components/ui/ColorTick.vue';
 import StatusPill from '@/components/ui/StatusPill.vue';
 import type { HorseId } from '@/domain';
-import type { BoardView } from '@/stores/raceView';
+import type { BoardView } from '@/viewModels';
 
 defineProps<{ board: BoardView }>();
 defineEmits<{ follow: [horseId: HorseId]; backToLive: [] }>();

@@ -9,7 +9,7 @@ import {
   toBodyConditionScore,
   type ConditionBand,
   type HorseId,
-} from '@/domain';
+} from '../domain';
 import {
   currentRoundPill,
   hasProgram,

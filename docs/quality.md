@@ -2,11 +2,11 @@
 
 ## Test suites
 
-| Suite         | Runs in                    | Tests | Focus                                                         |
-| ------------- | -------------------------- | ----- | ------------------------------------------------------------- |
-| Vitest `core` | Node                       | 407   | Rules, condition model, physics, time, playback, geometry     |
-| Vitest `ui`   | jsdom                      | 212   | Stores, view models, composables, components, app integration |
-| Playwright    | Chromium, production build | 46    | User flows, responsive layout, zero layout shift, visuals     |
+| Suite         | Runs in                    | Tests | Focus                                                                  |
+| ------------- | -------------------------- | ----- | ---------------------------------------------------------------------- |
+| Vitest `core` | Node                       | 454   | Rules, condition model, physics, time, playback, view models, geometry |
+| Vitest `ui`   | jsdom                      | 165   | Stores, composables, components, app integration                       |
+| Playwright    | Chromium, production build | 46    | User flows, responsive layout, zero layout shift, visuals              |
 
 Statement coverage is 97.9% (100% in `domain`), measured with `npm run test:coverage`.
 

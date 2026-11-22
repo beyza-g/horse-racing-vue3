@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ConditionView } from '@/stores/raceView';
+import type { ConditionView } from '@/viewModels';
 
 /**
  * Condition score with a marker for its body condition band. The marker's

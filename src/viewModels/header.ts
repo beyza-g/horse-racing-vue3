@@ -1,6 +1,6 @@
 /** Header view models: status line, round progress, playback control and the regenerate guard. */
-import { ROUND_DISTANCES } from '@/domain';
-import type { DirectorPhase } from '@/playback';
+import { ROUND_DISTANCES } from '../domain';
+import type { DirectorPhase } from '../playback';
 import {
   currentRoundPill,
   hasProgram,

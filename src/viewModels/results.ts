@@ -1,6 +1,6 @@
 /** Results panel view models: the board (live, official or gate order) and completed rounds. */
-import { formatOfficialTime, ROUND_DISTANCES, type HorseId } from '@/domain';
-import { formatOrdinal } from '@/playback';
+import { formatOfficialTime, ROUND_DISTANCES, type HorseId } from '../domain';
+import { formatOrdinal } from '../playback';
 import {
   currentRoundPill,
   hasProgram,

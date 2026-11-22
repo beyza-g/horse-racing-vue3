@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import IconPause from '@/components/ui/icons/IconPause.vue';
 import IconPlay from '@/components/ui/icons/IconPlay.vue';
-import type { PlaybackControlView } from '@/stores/raceView';
+import type { PlaybackControlView } from '@/viewModels';
 
 defineProps<{ control: PlaybackControlView }>();
 defineEmits<{ toggle: [] }>();

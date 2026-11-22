@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ProgressSegment } from '@/stores/raceView';
+import type { ProgressSegment } from '@/viewModels';
 
 defineProps<{ segments: readonly ProgressSegment[] }>();
 </script>

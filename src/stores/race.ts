@@ -38,7 +38,7 @@ import {
   isGeneratePrimary,
   regenerateNeedsConfirmation,
   type RaceViewState,
-} from './raceView';
+} from '@/viewModels';
 
 /** A random 32-bit seed when none is supplied (outside the pure layers, so host randomness is fine). */
 function randomSeed(): number {

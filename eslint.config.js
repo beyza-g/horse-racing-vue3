@@ -91,7 +91,16 @@ export default defineConfigWithVueTs(
       'no-restricted-globals': ['error', ...IMPURE_GLOBALS],
       'no-restricted-properties': ['error', ...IMPURE_PROPERTIES],
       'no-restricted-imports': forbidLayers(
-        ['playback', 'render', 'stores', 'composables', 'components'],
+        [
+          'playback',
+          'viewModels',
+          'render',
+          'stores',
+          'composables',
+          'components',
+          'layouts',
+          'views',
+        ],
         'The domain layer is pure: it may not depend on frameworks or outer layers.',
       ),
     },
@@ -103,8 +112,20 @@ export default defineConfigWithVueTs(
       'no-restricted-globals': ['error', ...IMPURE_GLOBALS],
       'no-restricted-properties': ['error', ...IMPURE_PROPERTIES],
       'no-restricted-imports': forbidLayers(
-        ['render', 'stores', 'composables', 'components'],
+        ['viewModels', 'render', 'stores', 'composables', 'components', 'layouts', 'views'],
         'The playback layer is pure: it may only depend on the domain layer.',
+      ),
+    },
+  },
+  {
+    name: 'app/layer-view-models',
+    files: ['src/viewModels/**/*.ts'],
+    rules: {
+      'no-restricted-globals': ['error', ...IMPURE_GLOBALS],
+      'no-restricted-properties': ['error', ...IMPURE_PROPERTIES],
+      'no-restricted-imports': forbidLayers(
+        ['render', 'stores', 'composables', 'components', 'layouts', 'views'],
+        'View models are pure display rules: they may only depend on domain and playback.',
       ),
     },
   },
@@ -113,7 +134,7 @@ export default defineConfigWithVueTs(
     files: ['src/render/**/*.ts'],
     rules: {
       'no-restricted-imports': forbidLayers(
-        ['stores', 'composables', 'components'],
+        ['viewModels', 'stores', 'composables', 'components', 'layouts', 'views'],
         'The render layer draws snapshots; it may not depend on Vue, Pinia or components.',
       ),
     },
@@ -127,8 +148,25 @@ export default defineConfigWithVueTs(
         {
           patterns: [
             {
-              group: ['@/components/**', '**/components/**'],
-              message: 'Stores must not depend on components.',
+              group: ['@/components/**', '@/layouts/**', '@/views/**'],
+              message: 'Stores must not depend on components, layouts or views.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    name: 'app/layer-components',
+    files: ['src/components/**/*.{ts,vue}', 'src/layouts/**/*.{ts,vue}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/views/**'],
+              message: 'Components and layouts are composed by views, never the reverse.',
             },
           ],
         },

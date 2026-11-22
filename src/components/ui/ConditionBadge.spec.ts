@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
-import { buildCondition } from '@/stores/raceView';
+import { buildCondition } from '@/viewModels';
 import ConditionBadge from './ConditionBadge.vue';
 
 describe('ConditionBadge', () => {

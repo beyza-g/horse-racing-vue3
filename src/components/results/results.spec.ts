@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
-import type { BoardView, CompletedRoundsView } from '@/stores/raceView';
+import type { BoardView, CompletedRoundsView } from '@/viewModels';
 import CompletedRounds from './CompletedRounds.vue';
 import ResultsLeaderboard from './ResultsLeaderboard.vue';
 

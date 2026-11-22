@@ -1,7 +1,7 @@
 /**
  * Shared input and helpers for the view-model modules: the store snapshot
  * every builder receives, status pills, medals and small formatting rules.
- * Internal to the view layer; `stores/raceView.ts` re-exports the public types.
+ * Internal to the view models; `index.ts` re-exports the public types.
  */
 import {
   ROUND_DISTANCES,
@@ -9,8 +9,8 @@ import {
   type HorseId,
   type Program,
   type RoundResult,
-} from '@/domain';
-import type { DirectorPhase, LiveOrderEntry } from '@/playback';
+} from '../domain';
+import type { DirectorPhase, LiveOrderEntry } from '../playback';
 
 export type PillTone = 'live' | 'paused' | 'gates' | 'official';
 

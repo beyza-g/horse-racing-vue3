@@ -4,7 +4,7 @@ import HorseBadge from '@/components/ui/HorseBadge.vue';
 import IconChevron from '@/components/ui/icons/IconChevron.vue';
 import StatusPill from '@/components/ui/StatusPill.vue';
 import type { HorseId } from '@/domain';
-import type { RoundCardView } from '@/stores/raceView';
+import type { RoundCardView } from '@/viewModels';
 
 const props = defineProps<{ card: RoundCardView }>();
 defineEmits<{ toggle: [roundIndex: number]; follow: [horseId: HorseId] }>();

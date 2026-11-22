@@ -3,9 +3,9 @@ import viteConfig from './vite.config.ts';
 
 /**
  * Two Vitest projects:
- * - `core`: pure engine, playback and render geometry, run in plain Node
+ * - `core`: pure engine, playback, view models and render geometry, run in plain Node
  *   so any accidental DOM dependency fails loudly.
- * - `ui`: stores, composables and components, run in jsdom.
+ * - `ui`: stores, composables, components, layouts and views, run in jsdom.
  */
 export default mergeConfig(
   viteConfig,
@@ -29,7 +29,7 @@ export default mergeConfig(
           test: {
             name: 'core',
             environment: 'node',
-            include: ['src/{domain,playback,render}/**/*.spec.ts'],
+            include: ['src/{domain,playback,viewModels,render}/**/*.spec.ts'],
             exclude: ['src/**/*.dom.spec.ts'],
           },
         },
@@ -40,7 +40,7 @@ export default mergeConfig(
             environment: 'jsdom',
             setupFiles: ['src/test/setup.ts'],
             include: [
-              'src/{stores,composables,components}/**/*.spec.ts',
+              'src/{stores,composables,components,layouts,views}/**/*.spec.ts',
               'src/**/*.dom.spec.ts',
               'src/*.spec.ts',
             ],

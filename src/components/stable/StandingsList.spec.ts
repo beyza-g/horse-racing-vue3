@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
-import type { StandingRow, StandingsView } from '@/stores/raceView';
+import type { StandingRow, StandingsView } from '@/viewModels';
 import StandingsList from './StandingsList.vue';
 
 const row = (patch: Partial<StandingRow>): StandingRow => ({

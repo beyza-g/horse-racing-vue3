@@ -7,27 +7,33 @@ only **show** it.
 ## Layers
 
 ```
-components/        Vue SFCs: containers, presentational components, wrappers
+App.vue            Root shell: app-wide concerns (theme), renders the page
    │
-stores/ ── composables/   Pinia stores + pure view models │ game loop, shortcuts, focus trap
+views/             Pages: compose layout, panels and dialogs; own page-wide interaction
    │
-render/            Canvas 2D drawing; reads the director, never mutates it (typed)
+layouts/ ── components/   Page skeleton (grid, breakpoints) │ containers, presentational, wrappers
+   │
+stores/ ── composables/   Pinia state and actions │ game loop, shortcuts, focus trap
+   │
+viewModels/ ── render/    Pure display rules │ Canvas 2D drawing (reads the director, never mutates it)
    │
 playback/          Pure timing: clock, fixed-step accumulator, slow motion, phase machine
    │
 domain/            Pure rules: horses, programs, condition, physics, standings, timeboard
 ```
 
-Dependencies point downwards only. `domain` and `playback` have no access to
-Vue, Pinia, the DOM, wall-clock time or `Math.random`: randomness is an
-injected seeded generator and time arrives as an explicit delta.
+Dependencies point downwards only. `domain`, `playback` and `viewModels` have
+no access to Vue, Pinia, the DOM, wall-clock time or `Math.random`:
+randomness is an injected seeded generator and time arrives as an explicit
+delta. Each folder has one job: views compose, layouts place, components
+render, stores hold state, view models decide what to display.
 
-| Mechanism                                      | What it catches                                                                                       |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| ESLint `no-restricted-imports`                 | `domain` importing `vue`, `pinia` or any outer layer; `render` importing stores or components         |
-| ESLint `no-restricted-globals` / `-properties` | `window`, `document`, `performance`, timers, `Date`, `Math.random` inside `domain` and `playback`     |
-| `tsconfig.core.json`                           | Type-checks `domain` and `playback` **without the DOM library**, so a stray `window` does not compile |
-| Vitest `core` project                          | Runs those layers' specs in plain Node, so a hidden DOM dependency fails at runtime too               |
+| Mechanism                                      | What it catches                                                                                                                                                                                               |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ESLint `no-restricted-imports`                 | `domain`, `playback` or `viewModels` importing Vue, Pinia or an outer layer; `render` importing view models or UI code; stores importing components, layouts or views; components and layouts importing views |
+| ESLint `no-restricted-globals` / `-properties` | `window`, `document`, `performance`, timers, `Date`, `Math.random` inside `domain`, `playback` and `viewModels`                                                                                               |
+| `tsconfig.core.json`                           | Type-checks `domain`, `playback` and `viewModels` **without the DOM library**, so a stray `window` does not compile                                                                                           |
+| Vitest `core` project                          | Runs those layers' specs in plain Node, so a hidden DOM dependency fails at runtime too                                                                                                                       |
 
 ## Determinism
 
@@ -104,7 +110,8 @@ renderer cannot advance or reset the game. The compiler enforces this.
 **Deliberately not stored:** per-frame positions (the renderer reads the
 director), the hovered lane and the active Stable tab (local state), program
 standings (derived from results) and every display value (pure view-model
-builders in `stores/views/`, re-exported by `stores/raceView.ts`).
+builders in `src/viewModels/`, one module per screen area behind the
+`@/viewModels` barrel; the store wraps them in `computed`).
 
 **Reactivity granularity.** All view models share one computed input except
 the live order, which only the board reads. A live-order update therefore
@@ -112,11 +119,13 @@ rebuilds the board alone, and a store spec fails if that regresses.
 
 ## Components
 
-| Kind           | Examples                                                                                                      | Rule                                  |
-| -------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| Containers     | `AppHeader`, `RaceTrack`, `ResultsPanel`, `ProgramPanel`, `StablePanel`, `FollowBadge`, the three dialogs     | Read stores, wire events              |
-| Presentational | `ResultsLeaderboard`, `CompletedRounds`, `RoundCard`, `StableTable`, `StatusIndicator`, `ConditionBadge`, ... | Typed props in, events out; no stores |
-| Wrappers       | `DashboardLayout`, `PanelCard`, `ModalDialog`                                                                 | Structure or behaviour through slots  |
+| Kind           | Examples                                                                                                      | Rule                                                    |
+| -------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Containers     | `AppHeader`, `RaceTrack`, `ResultsPanel`, `ProgramPanel`, `StablePanel`, `FollowBadge`, the three dialogs     | Read stores, wire events                                |
+| Presentational | `ResultsLeaderboard`, `CompletedRounds`, `RoundCard`, `StableTable`, `StatusIndicator`, `ConditionBadge`, ... | Typed props in, events out; no stores                   |
+| Wrappers       | `PanelCard`, `ModalDialog`                                                                                    | Structure or behaviour through slots                    |
+| Layout         | `layouts/DashboardLayout` (named slots, responsive grid)                                                      | Places regions; no data                                 |
+| View (page)    | `views/RaceDashboardView`                                                                                     | Composes the page, owns page-wide keys and dialog state |
 
 ## Rendering
 

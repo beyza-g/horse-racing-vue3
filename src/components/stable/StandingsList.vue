@@ -2,7 +2,7 @@
 import ColorTick from '@/components/ui/ColorTick.vue';
 import MovementBadge from '@/components/ui/MovementBadge.vue';
 import type { HorseId } from '@/domain';
-import type { StandingsView } from '@/stores/raceView';
+import type { StandingsView } from '@/viewModels';
 
 /**
  * Compact program standings for the stable column: rank, horse and points.

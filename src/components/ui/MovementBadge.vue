@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { StandingMovement } from '@/stores/raceView';
+import type { StandingMovement } from '@/viewModels';
 
 /**
  * Standings movement since the previous round: a triangle (shape carries the

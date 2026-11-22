@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PillTone } from '@/stores/raceView';
+import type { PillTone } from '@/viewModels';
 
 /**
  * Status pill. The `live` tone carries a pulsing dot: a solid dot in the
