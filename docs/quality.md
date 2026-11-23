@@ -27,6 +27,25 @@ Nothing is committed unless `npm run verify` passes (zero-warning lint,
 formatting, type checks, English check, unit tests); UI changes also pass the
 build and the E2E suite.
 
+## Improvements from manual testing
+
+Each problem below was found by using the app, then fixed and covered by
+tests.
+
+- **Slow motion.** Pausing during the finish slow motion and resuming a
+  moment later skipped the effect: the race finished at full speed. The
+  effect was timed with the real clock, which keeps running during a pause.
+  All effects now use a clock that stops when the race is paused.
+- **Generate during a race.** One click on Generate deleted the race in
+  progress without warning. Now the race pauses and a dialog asks first.
+  **Keep** has focus by default, and pressing Enter cannot delete anything.
+- **Final standings.** After the last round, opening the standings and
+  closing them left no visible way to start a new program. Closing now
+  returns to the summary, and the standings also have a Generate button.
+- **Following a horse.** On screens narrower than 1400 px, the "Following"
+  badge pushed the track down. It now floats over the page, so nothing
+  moves.
+
 ## Edge cases
 
 | Situation                | Expected behaviour                                                            | Tested in                                                          |
@@ -43,11 +62,3 @@ build and the E2E suite.
 | Typing in a field        | Keyboard shortcuts are ignored.                                               | `shortcuts.spec.ts`                                                |
 | 320 to 1440 px           | No horizontal scroll, no truncated names, no shift when playing or following. | `e2e/layout.spec.ts`                                               |
 | Blocked `localStorage`   | The theme still switches and falls back to dark.                              | `stores/preferences.spec.ts`                                       |
-
-## Known limitations
-
-- No CI yet, and visual baselines are recorded on macOS; a Linux CI would
-  need its own.
-- The canvas exposes only a summary label; the same data is in accessible
-  tables.
-- Reduced motion shortens CSS transitions but does not slow the race.

@@ -77,5 +77,5 @@ requires exactly 20 available horses; the game always generates all 20.
 | [docs/architecture.md](docs/architecture.md) | Layers, determinism, time, state, error handling, extending |
 | [docs/domain.md](docs/domain.md)             | The condition model, race times and simplifications         |
 | [docs/ux.md](docs/ux.md)                     | Design principles and key interaction decisions             |
-| [docs/quality.md](docs/quality.md)           | Test suites, edge cases and known limitations               |
+| [docs/quality.md](docs/quality.md)           | Test suites, fixes from manual testing and edge cases       |
 | [CLAUDE.md](CLAUDE.md)                       | Working rules for contributors and coding agents            |
